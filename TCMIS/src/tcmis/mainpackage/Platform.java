@@ -11,6 +11,7 @@ public class Platform extends Agent {
 
   protected void setup() { 
     // Printout a welcome message
+	System.out.println("MOEDERMILFJES");
     System.out.println("Hello World. I am an agent!");
     System.out.println("Hello World. I am also an agent! (KRIS)");
   }

@@ -1,4 +1,4 @@
-package Jade.helloworld;
+package tcmis.mainpackage;
 /**
  * Section 4.1.1, Page 52
 
@@ -11,7 +11,7 @@ import jade.core.Agent;
 
 import java.util.Iterator;
 
-public class HelloWorld2 extends Agent {
+public class Station extends Agent {
 
   protected void setup() { 
     // Printout a welcome message

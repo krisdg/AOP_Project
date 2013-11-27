@@ -1,4 +1,4 @@
-package Jade.helloworld;
+package tcmis.mainpackage;
 /**
  * Section 4.1, Page 51
  * Creating a JADE agent is as simple as defining a class that extends the jade.core.Agent 
@@ -7,7 +7,7 @@ package Jade.helloworld;
 
 import jade.core.Agent;
 
-public class helloworld1 extends Agent {
+public class Platform extends Agent {
 
   protected void setup() { 
     // Printout a welcome message

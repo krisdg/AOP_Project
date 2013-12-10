@@ -22,6 +22,22 @@ public class Receiver extends Agent{
 						   myAgent.getLocalName() + " received: " +
 						   msg.getContent() );
 						
+
+//						Object [] args = new Object[2];
+//				        args[0] = ""+i;
+//				        args[1] = "Gimmie koekjes";
+//					 
+//				        String name = "Zoekmachine_"+i ;
+//				        jade.wrapper.AgentContainer c = getContainerController();
+//				        try {
+//				            AgentController a = c.createNewAgent( name, "Receiver", args );
+//				            a.start();
+//				        }
+//				        catch (Exception e){
+//				        	System.out.println("MEEEEH 	" + e);
+//				        }
+						
+						
 						ACLMessage reply = msg.createReply();
 						reply.setPerformative( ACLMessage.INFORM );
 						reply.setContent(" Polo" );

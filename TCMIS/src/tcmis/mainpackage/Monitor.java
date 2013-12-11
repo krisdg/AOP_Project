@@ -39,7 +39,7 @@ public class Monitor extends GuiAgent {
 		
 	}
 	
-	public String[] getAgents() {
+	public AID[] getAgents() {
 		AMSAgentDescription[] AMSAgents = null;
 		try {
 			SearchConstraints c = new SearchConstraints();
@@ -50,16 +50,18 @@ public class Monitor extends GuiAgent {
 			e.printStackTrace();
 		}
 
-		String[] agents = new String[AMSAgents.length];
+		List<AID> agents = new ArrayList<AID>();
 		
 		AID myID = getAID();
 		for (int i = 0; i < AMSAgents.length; i++) {
 			AID agentID = AMSAgents[i].getName();
 
-			agents[i] = agentID.getName();
+			if (agentID.getName().startsWith("train_") || agentID.getName().startsWith("station_")) {
+				agents.add(agentID);
+			}
 		}
 		
-		return agents;
+		return agents.toArray(new AID[agents.size()]);
 	}
 
 	// AGENT OPERATIONS FOLLOWING GUI EVENTS

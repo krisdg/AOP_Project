@@ -191,9 +191,9 @@ public class MonitorGUI extends JFrame {
 	private void refreshAgents() {
 		cmb_agentList.removeAllItems();
 		
-		String[] agents = parentAgent.getAgents();
+		AID[] agents = parentAgent.getAgents();
 		for (int i = 0; i < agents.length; i++) {
-			cmb_agentList.addItem(agents[i]);
+			cmb_agentList.addItem(agents[i].getLocalName());
 		}
 	}
 
@@ -207,7 +207,7 @@ public class MonitorGUI extends JFrame {
 	}
 	
     private void btn_refreshAgentListActionPerformed(java.awt.event.ActionEvent evt) {                                                     
-        // TODOdd your handling code here:
+    	refreshAgents();
     }                                                    
 
     private void btn_openAgentActionPerformed(java.awt.event.ActionEvent evt) {                                              

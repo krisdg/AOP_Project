@@ -63,16 +63,19 @@ public class Car extends Agent {
 		System.out.println("update Location");
 		
 		if(currentX > destinationX)
-			currentX++;
-		else if(currentX < destinationX)
 			currentX--;
+		else if(currentX < destinationX)
+			currentX++;
 		
 		if(currentY > destinationY)
-			currentY++;
-		else if(currentY < destinationY)
 			currentY--;
+		else if(currentY < destinationY)
+			currentY++;
 		
 		showRaster();
+		
+		if(currentX == destinationX && currentY == destinationY)
+			return false;
 		
 		return true;
 		//TODO do some math
@@ -81,6 +84,11 @@ public class Car extends Agent {
 	private void showRaster() {
 		String map[][] = new String[20][20];
 		
+		for (int h = 0; h < 20; h++) {
+			for (int g = 0; g < 20; g++) {
+				map[h][g] = " ";
+			}
+		}
 		map[currentX][currentY] = "c";
 		map[destinationX][destinationY] = "d";
 		
@@ -121,7 +129,7 @@ public class Car extends Agent {
 			ACLMessage msg = receive();
 			if (msg != null) {
 				
-				String split[] = msg.getContent().split(";");
+				String split[] = msg.getContent().split("[;:]+");
 				for (int i = 0; i < split.length; i++) {
 					System.out.println("received: " + split[i]);
 				}
@@ -129,7 +137,7 @@ public class Car extends Agent {
 				switch(split[0]){
 				case "LOCATION":
 					//Create location reply
-					String loc = currentX + ";" + currentY + ";";
+					String loc = "LOCATION:" + currentX + ";" + currentY + ";";
 					
 					if(trainState.equals(State.AVAILABLE)){
 						loc += "AVAILABLE";
@@ -150,11 +158,16 @@ public class Car extends Agent {
 				case "GOTO":
 					if (trainState.equals(State.AVAILABLE)) {
 						changeState(State.UNAVAILABLE);
-						destinationX = 4 ;// Integer.getInteger(split[1]);
-						destinationY = 13 ; //Integer.getInteger(split[2]);
+						
+						System.out.println("destination: " + split[1] + " " + split[2]);
+						
+						String x = split[1];
+						destinationX = Integer.parseInt(x);
+						x = split[2];
+						destinationY = Integer.parseInt(x);
 						
 						// Add the TickerBehaviour (period 100 milsec)
-					    myAgent.addBehaviour(new TickerBehaviour(myAgent, 100) {
+					    myAgent.addBehaviour(new TickerBehaviour(myAgent, 1000) {
 					      protected void onTick() {
 					        //System.out.println("Agent "+myAgent.getLocalName()+": tick="+getTickCount());
 					    	  if(!updateLocation()){

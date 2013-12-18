@@ -9,69 +9,56 @@ package tcmis.mainpackage;
 import java.util.ArrayList;
 
 import jade.core.Agent;
+import jade.core.behaviours.CyclicBehaviour;
+import jade.core.behaviours.OneShotBehaviour;
+import jade.lang.acl.ACLMessage;
 
 public class Train extends Agent {
-	ArrayList<TrainUnit> trainUnits = new ArrayList<TrainUnit>();
-	ArrayList<Integer> route = new ArrayList<Integer>();
+	int currentX, currentY, destinationX, destinationY;
+	State trainState = State.AVAILABLE;
 
 	public enum State {
-		Waiting, Driving, Stop
+		AVAILABLE, UNAVAILABLE
 	}
 
-	State trainState = State.Stop;
-
+	
 	protected void setup() {
 		System.out.println("Hello World. I am an Train!");
-		
-		// Define the number of train units
-		for (int i = 0; i < 6; i++) {
-			trainUnits.add(new TrainUnit());
-		}
-		for (int i = 0; i < 6; i++) {
-			addStationToRoute(i);
-		}
-		
-		changeState(State.Driving);
-		
+
+		// The Receiver of train
+		addBehaviour(new ReceiveBehaviour(this));
+
 	}
 
 	/**
-	 * Add an trainstation to the train route
-	 * 
-	 * @param station
-	 *            The station id
+	 * Set the destination
+	 * @param x the X destination
+	 * @param y the Y destination
+	 * @return Boolean
 	 */
-	public boolean addStationToRoute(int station) {
-		// search if station already exists
-		for (int i = 0; i < route.size(); i++) {
-			if (route.get(i) == station) {
-				return false;
-			}
+	public boolean goTo(int x, int y) {
+		if(trainState.equals(State.AVAILABLE)){
+			changeState(State.UNAVAILABLE);
+			currentX = x;
+			currentY = y;
+			return true;
 		}
-		route.add(station);
-		System.out.println("Station " + station + " added to route " + getAID().getLocalName());
-		return true;
-	}
-
-	/**
-	 * Removes the station from the route
-	 * 
-	 * @param station
-	 *            The station id
-	 * @return True if station is deleted from route
-	 */
-	public boolean removeStationFromRoute(int station) {
-
-		// search for station
-		for (int i = 0; i < route.size(); i++) {
-			if (route.get(i) == station) {
-				route.remove(i);
-				return true;
-			}
-		}
-		// Station is not found
-		System.out.println("Station " + station + " removed from route " + getAID().getLocalName());
 		return false;
+	}
+	
+	/**
+	 * Return the location
+	 * @return int[] (int[0] = x and int[1] = y)
+	 */
+	private int[] getLocation(){
+		int[] location = new int[2];
+		location[0] = currentX;
+		location[1] = currentY;
+		return location;
+	}
+	
+	private void updateLocation(){
+		//TODO do some math
 	}
 
 	/**
@@ -82,10 +69,64 @@ public class Train extends Agent {
 	 */
 	public void changeState(State state) {
 		trainState = state;
-		System.out.println("State changed " + state+ " to " + getAID().getLocalName());
-		
+		System.out.println("State changed " + state + " to "
+				+ getAID().getLocalName());
+
 	}
 
-	// TODO create some sort of method to return the state
+	/**
+	 * 
+	 * @author Michiel
+	 *	A class 
+	 */
+	class ReceiveBehaviour extends CyclicBehaviour {
 
+		public ReceiveBehaviour(Agent a) {
+			super(a);
+		}
+
+		public void action() {
+			ACLMessage msg = receive();
+			if (msg != null) {
+				
+				switch(msg.getContent()){
+				case "LOCATION":
+					//Create location reply
+					String loc = currentX + ";" + currentY + ";";
+					
+					if(trainState.equals(State.AVAILABLE)){
+						loc += "AVAILABLE";
+					} else{
+						loc += "UNAVAILABLE";
+					}
+					
+					ACLMessage reply = msg.createReply();
+					reply.setPerformative(ACLMessage.INFORM);
+					reply.setContent(loc);
+					send(reply);
+					
+					break;
+					
+				case "REJECTED":
+					//Do nothing
+					break;
+					
+				default:
+					
+					break;
+				}
+				
+				System.out.println(" - " + myAgent.getLocalName()
+						+ " received: " + msg.getContent());
+
+				ACLMessage reply = msg.createReply();
+				reply.setPerformative(ACLMessage.INFORM);
+				reply.setContent(" Polo");
+				send(reply);
+			}
+			block();
+		}
+	}
+
+	
 }

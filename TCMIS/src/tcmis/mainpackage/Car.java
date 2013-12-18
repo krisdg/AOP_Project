@@ -12,7 +12,7 @@ import jade.core.behaviours.TickerBehaviour;
 import jade.lang.acl.ACLMessage;
 
 public class Car extends Agent {
-	int currentX = 0, currentY = 0, destinationX, destinationY;
+	double currentX = 0, currentY = 0, destinationX, destinationY;
 	State trainState = State.AVAILABLE;
 
 	public enum State {
@@ -21,7 +21,7 @@ public class Car extends Agent {
 
 	
 	protected void setup() {
-		System.out.println("Hello World. I am an Train!");
+		System.out.println("Hello World. I am an Car!");
 
 		// The Receiver of train
 		addBehaviour(new ReceiveBehaviour(this));
@@ -39,38 +39,104 @@ public class Car extends Agent {
 			changeState(State.UNAVAILABLE);
 			destinationX = x;
 			destinationY = y;
+			
+			// Add the TickerBehaviour (period 100 milsec)
+		    addBehaviour(new TickerBehaviour(this, 1000) {
+		      protected void onTick() {
+		        //System.out.println("Agent "+myAgent.getLocalName()+": tick="+getTickCount());
+		    	  if(!updateLocation()){
+		    		  changeState(State.AVAILABLE);
+		    		  stop();
+		    	  }
+				}
+			});
+
 			return true;
 		}
 		return false;
+
 	}
 	
 	/**
 	 * Return the location
 	 * @return int[] (int[0] = x and int[1] = y)
 	 */
-	private int[] getLocation(){
-		int[] location = new int[2];
-		location[0] = currentX;
-		location[1] = currentY;
-		return location;
+	private String getLocation(){
+		
+		//Create location reply
+		String loc = "LOCATION:" + currentX + ";" + currentY + ";";
+		
+		if(trainState.equals(State.AVAILABLE)){
+			loc += "AVAILABLE";
+		} else{
+			loc += "UNAVAILABLE";
+		}
+		
+		return loc;
 	}
 	
 	/**
-	 * Let the train move
+	 * Let the car move (the shortest path)
 	 * @return true if the train has moved
 	 */
 	private boolean updateLocation(){
 		System.out.println("update Location");
 		
-		if(currentX > destinationX)
-			currentX--;
-		else if(currentX < destinationX)
-			currentX++;
+		double diffx = 0, diffy = 0; 
 		
-		if(currentY > destinationY)
-			currentY--;
-		else if(currentY < destinationY)
-			currentY++;
+		diffx = currentX - destinationX;
+		diffy = currentY - destinationY;
+		
+		if (diffx != 0 && diffy != 0) {
+			
+			if (diffx > diffy) {
+				//Devide only with positive numbers
+				double smalStep = Math.abs(diffx)/Math.abs(diffy);
+				
+				//Decide what way the car is moving
+				if (diffx < 0)
+					currentX += smalStep;
+				else if (diffx > 0)
+					currentX -= smalStep;
+				
+				if (diffy < 0)
+					currentY += 1;
+				else if (diffy > 0)
+					currentY -= 1;
+				
+				
+			} else {
+				//Devide only with positive numbers
+				double d = Math.abs(diffy)/Math.abs(diffx);
+				
+				//Decide what way the car is moving
+				if (diffy < 0)
+					currentY += d;
+				else if (diffy > 0)
+					currentY -= d;
+				
+				if (diffx < 0)
+					currentX += 1;
+				else if (diffx > 0)
+					currentX -= 1;
+				
+			}
+		} else if (diffx == 0) {
+			//Decide what way the car is moving
+			if (diffy < 0)
+				currentY += 1;
+			else if (diffy > 0)
+				currentY -= 1;
+			
+		} else if (diffy == 0) {
+			//Decide what way the car is moving
+			if (diffx < 0)
+				currentX += 1;
+			else if (diffx > 0)
+				currentX -= 1;
+			
+		}
+		System.out.println("Diff x: " + diffx + " - Diff y: " + diffy);
 		
 		showRaster();
 		
@@ -78,23 +144,22 @@ public class Car extends Agent {
 			return false;
 		
 		return true;
-		//TODO do some math
 	}
 
 	private void showRaster() {
-		String map[][] = new String[20][20];
+		String map[][] = new String[40][40];
 		
-		for (int h = 0; h < 20; h++) {
-			for (int g = 0; g < 20; g++) {
+		for (int h = 0; h < map.length; h++) {
+			for (int g = 0; g < map.length; g++) {
 				map[h][g] = " ";
 			}
 		}
-		map[currentX][currentY] = "c";
-		map[destinationX][destinationY] = "d";
+		map[(int)currentX][(int)currentY] = "c";
+		map[(int)destinationX][(int)destinationY] = "d";
 		
-		for (int i = 0; i < 20; i++) {
-			for (int j = 0; j < 20; j++) {
-				System.out.print("|" + map[i][j]);
+		for (int i = 0; i < map.length; i++) {
+			for (int j = 0; j < map.length; j++) {
+				System.out.print("|" + map[j][i]);
 			}
 			System.out.println("|");
 		}
@@ -136,55 +201,30 @@ public class Car extends Agent {
 				
 				switch(split[0]){
 				case "LOCATION":
-					//Create location reply
-					String loc = "LOCATION:" + currentX + ";" + currentY + ";";
-					
-					if(trainState.equals(State.AVAILABLE)){
-						loc += "AVAILABLE";
-					} else{
-						loc += "UNAVAILABLE";
-					}
 					
 					ACLMessage reply = msg.createReply();
 					reply.setPerformative(ACLMessage.INFORM);
-					reply.setContent(loc);
+					reply.setContent(getLocation());
 					send(reply);
 					
+					System.out.println(reply.getContent());
 					break;
 					
 				case "REJECTED":
-					//Do nothing
+					//Buhuhuhu :'(
 					break;
 				case "GOTO":
-					if (trainState.equals(State.AVAILABLE)) {
-						changeState(State.UNAVAILABLE);
+					
+					if ( !goTo(Integer.parseInt(split[1]),
+							Integer.parseInt(split[2]))) {
 						
-						System.out.println("destination: " + split[1] + " " + split[2]);
-						
-						String x = split[1];
-						destinationX = Integer.parseInt(x);
-						x = split[2];
-						destinationY = Integer.parseInt(x);
-						
-						// Add the TickerBehaviour (period 100 milsec)
-					    myAgent.addBehaviour(new TickerBehaviour(myAgent, 1000) {
-					      protected void onTick() {
-					        //System.out.println("Agent "+myAgent.getLocalName()+": tick="+getTickCount());
-					    	  if(!updateLocation()){
-					    		  changeState(State.AVAILABLE);
-					    		  stop();
-					    	  }
-					      } 
-					    });
-						
-					} else {
 						// Replay an failure
 						ACLMessage replyFailure = msg.createReply();
 						replyFailure.setPerformative(ACLMessage.INFORM);
 						replyFailure.setContent("FAILURE");
 						send(replyFailure);
 					}
-					
+
 					break;
 				default:
 					

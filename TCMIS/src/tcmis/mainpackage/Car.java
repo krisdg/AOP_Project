@@ -6,15 +6,13 @@ package tcmis.mainpackage;
  * class and implementing the setup() method as exemplified in the code below.
  **/
 
-import java.util.ArrayList;
-
 import jade.core.Agent;
 import jade.core.behaviours.CyclicBehaviour;
-import jade.core.behaviours.OneShotBehaviour;
+import jade.core.behaviours.TickerBehaviour;
 import jade.lang.acl.ACLMessage;
 
-public class Train extends Agent {
-	int currentX, currentY, destinationX, destinationY;
+public class Car extends Agent {
+	int currentX = 0, currentY = 0, destinationX, destinationY;
 	State trainState = State.AVAILABLE;
 
 	public enum State {
@@ -39,8 +37,8 @@ public class Train extends Agent {
 	public boolean goTo(int x, int y) {
 		if(trainState.equals(State.AVAILABLE)){
 			changeState(State.UNAVAILABLE);
-			currentX = x;
-			currentY = y;
+			destinationX = x;
+			destinationY = y;
 			return true;
 		}
 		return false;
@@ -57,8 +55,42 @@ public class Train extends Agent {
 		return location;
 	}
 	
-	private void updateLocation(){
+	/**
+	 * Let the train move
+	 * @return true if the train has moved
+	 */
+	private boolean updateLocation(){
+		System.out.println("update Location");
+		
+		if(currentX > destinationX)
+			currentX++;
+		else if(currentX < destinationX)
+			currentX--;
+		
+		if(currentY > destinationY)
+			currentY++;
+		else if(currentY < destinationY)
+			currentY--;
+		
+		showRaster();
+		
+		return true;
 		//TODO do some math
+	}
+
+	private void showRaster() {
+		String map[][] = new String[20][20];
+		
+		map[currentX][currentY] = "c";
+		map[destinationX][destinationY] = "d";
+		
+		for (int i = 0; i < 20; i++) {
+			for (int j = 0; j < 20; j++) {
+				System.out.print("|" + map[i][j]);
+			}
+			System.out.println("|");
+		}
+		
 	}
 
 	/**
@@ -89,7 +121,12 @@ public class Train extends Agent {
 			ACLMessage msg = receive();
 			if (msg != null) {
 				
-				switch(msg.getContent()){
+				String split[] = msg.getContent().split(";");
+				for (int i = 0; i < split.length; i++) {
+					System.out.println("received: " + split[i]);
+				}
+				
+				switch(split[0]){
 				case "LOCATION":
 					//Create location reply
 					String loc = currentX + ";" + currentY + ";";
@@ -110,19 +147,37 @@ public class Train extends Agent {
 				case "REJECTED":
 					//Do nothing
 					break;
+				case "GOTO":
+					if (trainState.equals(State.AVAILABLE)) {
+						changeState(State.UNAVAILABLE);
+						destinationX = 4 ;// Integer.getInteger(split[1]);
+						destinationY = 13 ; //Integer.getInteger(split[2]);
+						
+						// Add the TickerBehaviour (period 100 milsec)
+					    myAgent.addBehaviour(new TickerBehaviour(myAgent, 100) {
+					      protected void onTick() {
+					        //System.out.println("Agent "+myAgent.getLocalName()+": tick="+getTickCount());
+					    	  if(!updateLocation()){
+					    		  changeState(State.AVAILABLE);
+					    		  stop();
+					    	  }
+					      } 
+					    });
+						
+					} else {
+						// Replay an failure
+						ACLMessage replyFailure = msg.createReply();
+						replyFailure.setPerformative(ACLMessage.INFORM);
+						replyFailure.setContent("FAILURE");
+						send(replyFailure);
+					}
 					
+					break;
 				default:
 					
 					break;
 				}
-				
-				System.out.println(" - " + myAgent.getLocalName()
-						+ " received: " + msg.getContent());
 
-				ACLMessage reply = msg.createReply();
-				reply.setPerformative(ACLMessage.INFORM);
-				reply.setContent(" Polo");
-				send(reply);
 			}
 			block();
 		}

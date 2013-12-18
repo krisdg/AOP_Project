@@ -63,7 +63,7 @@ public class Receiver extends Agent {
 	void createCar() {
 		CreateAgent ca = new CreateAgent();
 		ca.setAgentName(getValidCarName());
-		ca.setClassName(this.getClass().getName());
+		ca.setClassName(Car.class.getName());
 		ca.setContainer(new ContainerID("Main-Container", null));
 		Action actExpr = new Action(getAMS(), ca);
 		ACLMessage request = new ACLMessage(ACLMessage.REQUEST);
@@ -103,7 +103,7 @@ public class Receiver extends Agent {
 							+ " received: " + msg.getContent());
 
 					if (msg.getContent().equals("derp")) {
-						createAgent();
+						createCar();
 					}
 					ACLMessage reply = msg.createReply();
 					reply.setPerformative(ACLMessage.INFORM);

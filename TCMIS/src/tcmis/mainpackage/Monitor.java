@@ -6,15 +6,20 @@ package tcmis.mainpackage;
  * class and implementing the setup() method as exemplified in the code below.
  **/
 
+import java.awt.Color;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import jade.core.AID;
+import jade.core.behaviours.CyclicBehaviour;
 import jade.domain.AMSService;
 import jade.domain.FIPAAgentManagement.AMSAgentDescription;
 import jade.domain.FIPAAgentManagement.SearchConstraints;
 import jade.gui.GuiAgent;
 import jade.gui.GuiEvent;
+import jade.lang.acl.ACLMessage;
 
 public class Monitor extends GuiAgent {
 	/**
@@ -34,33 +39,122 @@ public class Monitor extends GuiAgent {
 	public void setup() {
 		// creates and shows the GUI
 		gui = new MonitorGUI(this);
-		gui.setVisible(true);
 		
+		addBehaviour(new CyclicBehaviour(this) 
+		{
+			private static final long serialVersionUID = 1L;
+
+			public void action() {
+				ACLMessage msg = receive();
+				if (msg != null) {
+					System.out.println(" - " + myAgent.getLocalName()
+							+ " received: " + msg.getContent());
+
+					if (msg.getSender().getLocalName().startsWith("CAR_")) {
+						if (msg.getContent().startsWith("LOCATION:")) {
+							String[] message = msg.getContent().replaceAll("LOCATION:", "").split(";");
+							
+							int x = Integer.parseInt(message[0]);
+							int y = Integer.parseInt(message[1]);
+							
+							Color color;
+							
+							if (message[2].equals("AVAILABLE")) {
+								color = new Color(0, 190, 0);
+							} else {
+								color = new Color(190, 0, 0);
+							}
+							
+							gui.addCar(x, y, x, y, color, msg.getSender().getLocalName());
+						}
+					}
+					if (msg.getSender().getLocalName().startsWith("STATION_")) {
+						if (msg.getContent().startsWith("LOCATION:")) {
+							String[] message = msg.getContent().replaceAll("LOCATION:", "").split(";");
+							
+							String stationID = msg.getSender().getLocalName().replaceAll("STATION_", "");
+							
+							int x = Integer.parseInt(message[0]);
+							int y = Integer.parseInt(message[1]);
+							
+							gui.addStation(x, y, Color.BLACK, stationID);
+						}
+					}
+				}
+			}
+		});
 		
+		Timer timer = new Timer();
+        timer.scheduleAtFixedRate(new TimerTask() {
+
+            @Override
+            public void run() {
+        		System.out.println("refresh");
+        		broadCastLocation();
+            }
+        }, 100, 500);
 	}
 	
+	public void broadCastLocation() {
+		gui.clearOverview();
+		AID[] agents = getAgents();
+		
+		//Ask all cars and stations for their location
+		ACLMessage msg1 = new ACLMessage(ACLMessage.INFORM);
+		msg1.setContent("LOCATION");
+		
+		int receivers = 0;
+		
+		//Broadcast to all cars and stations.
+		for (int i=0; i<agents.length;i++) {
+			if(agents[i].getLocalName().startsWith("CAR_") || agents[i].getLocalName().startsWith("STATION_")) {
+				msg1.addReceiver(agents[i]); 
+				receivers++;
+			}
+		}
+		
+		if (receivers > 0)
+			send(msg1);
+		
+		receivers = 0;
+		
+		//Ask all cars for their destination
+		ACLMessage msg2 = new ACLMessage(ACLMessage.INFORM);
+		msg2.setContent("DESTINATION");
+
+		//Broadcast to all cars and stations.
+		for (int i=0; i<agents.length;i++) {
+			if(agents[i].getLocalName().startsWith("CAR_")) {
+				msg2.addReceiver(agents[i]);
+				receivers++;
+			}
+		}
+
+		if (receivers > 0)
+			send(msg2);
+	}
+
 	public AID[] getAgents() {
-		AMSAgentDescription[] AMSAgents = null;
+		AMSAgentDescription[] AMSAgents;
+		List<AID> agents = new ArrayList<AID>();
 		try {
 			SearchConstraints c = new SearchConstraints();
 			c.setMaxResults(new Long(-1));
 			AMSAgents = AMSService.search(this, new AMSAgentDescription(), c);
+			
+			AID myID = getAID();
+			for (int i = 0; i < AMSAgents.length; i++) {
+				AID agentID = AMSAgents[i].getName();
+
+				if (agentID.getName().startsWith("CAR_") || agentID.getName().startsWith("STATION_")) {
+					agents.add(agentID);
+				}
+			}
 		} catch (Exception e) {
 			System.out.println("Problem searching AMS: " + e);
 			e.printStackTrace();
 		}
 
-		List<AID> agents = new ArrayList<AID>();
-		
-		AID myID = getAID();
-		for (int i = 0; i < AMSAgents.length; i++) {
-			AID agentID = AMSAgents[i].getName();
-
-			if (agentID.getName().startsWith("train_") || agentID.getName().startsWith("station_")) {
-				agents.add(agentID);
-			}
-		}
-		
 		return agents.toArray(new AID[agents.size()]);
 	}
 

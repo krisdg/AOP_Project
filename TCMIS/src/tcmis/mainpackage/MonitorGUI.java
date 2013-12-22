@@ -31,6 +31,7 @@ import jade.domain.FIPAAgentManagement.*;
 public class MonitorGUI extends JFrame {
 
 	Monitor parentAgent;
+	Overview canvas = new Overview();
 	/**
 	 * 
 	 */
@@ -39,28 +40,13 @@ public class MonitorGUI extends JFrame {
 	MonitorGUI(Monitor parentAgent) {
 		this.parentAgent = parentAgent;
 
-		Overview canvas = new Overview();
         this.setSize(1000, 500);
         this.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         this.setContentPane(canvas.view);
         this.pack();
         this.setLocationByPlatform(true);
         this.setVisible(true);
-        
-        //TEST
-        canvas.addCar(100, 100, 300, 300, new Color(0,190,0), "CAR_A");
-        canvas.addStation(300, 300, Color.BLACK, "A");
-        canvas.addStation(800, 200, Color.BLACK, "W");
 	}
-
-//	private void refreshAgents() {
-//		cmb_agentList.removeAllItems();
-//		
-//		AID[] agents = parentAgent.getAgents();
-//		for (int i = 0; i < agents.length; i++) {
-//			cmb_agentList.addItem(agents[i].getLocalName());
-//		}
-//	}
 
 	@Override
 	protected void processWindowEvent(WindowEvent e) {
@@ -69,7 +55,19 @@ public class MonitorGUI extends JFrame {
 		if (e.getID() == WindowEvent.WINDOW_CLOSING) {
 			parentAgent.doDelete();
 		}
-	}  
+	}
+	
+	public void addCar(int curX, int curY, int desX, int desY, Color color, String name) {
+		canvas.addCar(curX, curY, desX, desY, color, name);
+	}
+	
+	public void addStation(int statX, int statY, Color color, String name) {
+		canvas.addStation(statX, statY, color, name);
+	}
+
+	public void clearOverview() {
+		canvas.initialize();
+	}
 
 }
 
@@ -83,7 +81,11 @@ class Overview
     {
         surface = new BufferedImage(1000,500,BufferedImage.TYPE_INT_RGB);
         view = new JLabel(new ImageIcon(surface));
-        Graphics g = surface.getGraphics();
+        initialize();
+    }
+    
+    public void initialize() {
+    	Graphics g = surface.getGraphics();
         g.setColor(Color.WHITE);
         g.fillRect(0,0,1000,500);
         

@@ -7,109 +7,261 @@ package tcmis.mainpackage;
  **/
 
 import jade.core.Agent;
+import jade.core.behaviours.Behaviour;
 import jade.core.behaviours.CyclicBehaviour;
 import jade.core.behaviours.TickerBehaviour;
+import jade.core.behaviours.WakerBehaviour;
 import jade.lang.acl.ACLMessage;
 
 public class Car extends Agent {
-	int currentX = 0, currentY = 0, destinationX, destinationY;
-	State trainState = State.AVAILABLE;
-
+	double currentX = 0, currentY = 0, destinationX, destinationY;
+	State carState = State.AVAILABLE;
+	Behaviour gotoBehaviour, goBackBehaviour;
+	ACLMessage saveMessageForReply;
+	
+	//<Settings>
+	boolean showDebugInfo = true;
+	int carSpeedInMil = 100; //The update time in milliseconds
+	int backToGarageTime = 120000; //The time until the car goes back to the garage
+	//</Settings>
+	
+	
 	public enum State {
 		AVAILABLE, UNAVAILABLE
 	}
 
-	
 	protected void setup() {
-		System.out.println("Hello World. I am an Train!");
 
-		// The Receiver of train
+		// Create a new communication behaviour for receiving commands
 		addBehaviour(new ReceiveBehaviour(this));
 
 	}
 
 	/**
 	 * Set the destination
-	 * @param x the X destination
-	 * @param y the Y destination
+	 * 
+	 * @param x
+	 *            the X destination
+	 * @param y
+	 *            the Y destination
 	 * @return Boolean
 	 */
 	public boolean goTo(int x, int y) {
-		if(trainState.equals(State.AVAILABLE)){
-			changeState(State.UNAVAILABLE);
-			destinationX = x;
-			destinationY = y;
-			return true;
+		// This method doesn't work when car is unavailable
+		if (carState.equals(State.UNAVAILABLE))
+			return false;
+
+		//Update the destination
+		destinationX = x;
+		destinationY = y;
+		
+		// When the gotoBehaviour is still working, just update the destination and return true (in case the car is on its way to the garage).
+		try {
+			if (!gotoBehaviour.done()) {
+				return true;
+			}
+		} catch (NullPointerException e) {
 		}
-		return false;
-	}
-	
-	/**
-	 * Return the location
-	 * @return int[] (int[0] = x and int[1] = y)
-	 */
-	private int[] getLocation(){
-		int[] location = new int[2];
-		location[0] = currentX;
-		location[1] = currentY;
-		return location;
-	}
-	
-	/**
-	 * Let the train move
-	 * @return true if the train has moved
-	 */
-	private boolean updateLocation(){
-		System.out.println("update Location");
-		
-		if(currentX > destinationX)
-			currentX++;
-		else if(currentX < destinationX)
-			currentX--;
-		
-		if(currentY > destinationY)
-			currentY++;
-		else if(currentY < destinationY)
-			currentY--;
-		
-		showRaster();
-		
+
+		// Add the TickerBehaviour (period 100 milsec)
+		gotoBehaviour = new TickerBehaviour(this, carSpeedInMil) {
+			protected void onTick() {
+
+				// true when car is arrived at destination
+				if (updateLocation()) {
+					if (carState == State.UNAVAILABLE) {
+						
+						// Reply the Accomplished
+						ACLMessage replyAccomplished = saveMessageForReply
+								.createReply();
+						replyAccomplished.setPerformative(ACLMessage.INFORM);
+						replyAccomplished.setContent("ACCOMPLISHED");
+						send(replyAccomplished);
+						
+						if (showDebugInfo)
+							System.out.println(getName()
+									+ " reply for \"GOTO\": "
+									+ replyAccomplished.getContent());
+					}
+					changeState(State.AVAILABLE);
+					
+					//Checks if car is back to base
+					if (currentX == 0 && currentY == 0) {
+						if (showDebugInfo)
+							System.out
+									.println(getName()
+											+ " is arrived in the garage, commits suicide.");
+						myAgent.doDelete();
+					}
+					stop();
+				}
+			}
+		};
+
+		addBehaviour(gotoBehaviour);
+
 		return true;
-		//TODO do some math
+
 	}
 
+	/**
+	 * Reset the goback behaviour, the goback behaviour is used when the car isn't used for 120 seconds, and sends the car back to the garage.
+	 */
+	public void resetGoBackBehaviour() {
+
+		try {
+			goBackBehaviour.reset();
+			if (showDebugInfo)
+				System.out.println(getName() + " goBackBehaviour is resetted");
+
+		} catch (NullPointerException e) {
+			if (showDebugInfo)
+				System.out
+						.println(getName()
+								+ " Create a whole new goBackBehaviour (only one time)");
+
+			goBackBehaviour = new WakerBehaviour(this, backToGarageTime) {
+				protected void handleElapsedTimeout() {
+					if (showDebugInfo)
+						System.out.println(myAgent.getName()
+								+ " Goes back to base.");
+
+					if (!goTo(0, 0))
+						this.reset();
+				}
+			};
+			addBehaviour(goBackBehaviour);
+		}
+
+	}
+
+	/**
+	 * Return the location, this method is used to respond to a Station if he request LOCATION.
+	 * 
+	 * @return String LOCATION:X;Y;AVAILABLE/UNAVAILABLE
+	 */
+	private String getLocation() {
+		// Create location reply
+		String location = "LOCATION:" + (int) currentX + ";" + (int) currentY + ";";
+
+		if (carState.equals(State.AVAILABLE)) {
+			location += "AVAILABLE";
+		} else {
+			location += "UNAVAILABLE";
+		}
+
+		return location;
+	}
+
+	/**
+	 * Let the car move (the shortest path)
+	 * 
+	 * @return true if arrived at destination
+	 */
+	private boolean updateLocation() {
+		resetGoBackBehaviour();
+
+		double diffx = 0, diffy = 0;
+
+		diffx = currentX - destinationX;
+		diffy = currentY - destinationY;
+
+		if (diffx != 0 && diffy != 0) {
+
+			if (Math.abs(diffx) < Math.abs(diffy)) {
+				// Devide only with positive numbers
+				double smalStep = Math.abs(diffx) / Math.abs(diffy);
+
+				// Decide what way the car is moving
+				if (diffx < 0)
+					currentX += smalStep;
+				else if (diffx > 0)
+					currentX -= smalStep;
+
+				if (diffy < 0)
+					currentY += 1;
+				else if (diffy > 0)
+					currentY -= 1;
+
+			} else {
+				// Devide only with positive numbers
+				double d = Math.abs(diffy) / Math.abs(diffx);
+
+				// Decide what way the car is moving
+				if (diffy < 0)
+					currentY += d;
+				else if (diffy > 0)
+					currentY -= d;
+
+				if (diffx < 0)
+					currentX += 1;
+				else if (diffx > 0)
+					currentX -= 1;
+
+			}
+		} else if (diffx == 0) {
+			// Decide what way the car is moving
+			if (diffy < 0)
+				currentY += 1;
+			else if (diffy > 0)
+				currentY -= 1;
+
+		} else if (diffy == 0) {
+			// Decide what way the car is moving
+			if (diffx < 0)
+				currentX += 1;
+			else if (diffx > 0)
+				currentX -= 1;
+
+		}
+		
+		// Show car in an field (test purposes)
+		// showRaster();
+
+		if (currentX == destinationX && currentY == destinationY)
+			return true;
+
+		return false;
+	}
+
+	/**
+	 * Show an field in the commandline of 40 by 40 tiles, just for test
+	 * purposes.
+	 */
 	private void showRaster() {
-		String map[][] = new String[20][20];
-		
-		map[currentX][currentY] = "c";
-		map[destinationX][destinationY] = "d";
-		
-		for (int i = 0; i < 20; i++) {
-			for (int j = 0; j < 20; j++) {
-				System.out.print("|" + map[i][j]);
+		String map[][] = new String[40][40];
+
+		for (int h = 0; h < map.length; h++) {
+			for (int g = 0; g < map.length; g++) {
+				map[h][g] = " ";
+			}
+		}
+		map[(int) destinationX][(int) destinationY] = "d";
+		map[(int) currentX][(int) currentY] = "c";
+
+		for (int i = 0; i < map.length; i++) {
+			for (int j = 0; j < map.length; j++) {
+				System.out.print("|" + map[j][i]);
 			}
 			System.out.println("|");
 		}
-		
+
 	}
 
 	/**
-	 * Change the state of the train to "Waiting", "Driving" or "Stop"
+	 * Change the state of the car to AVAILABLE, UNAVAILABLE
 	 * 
 	 * @param state
 	 *            State enum
 	 */
 	public void changeState(State state) {
-		trainState = state;
-		System.out.println("State changed " + state + " to "
-				+ getAID().getLocalName());
-
+		carState = state;
 	}
 
 	/**
 	 * 
-	 * @author Michiel
-	 *	A class 
+	 * @author Michiel 
+	 * A CyclicBehaviour class that handles all the received messages.
 	 */
 	class ReceiveBehaviour extends CyclicBehaviour {
 
@@ -120,61 +272,77 @@ public class Car extends Agent {
 		public void action() {
 			ACLMessage msg = receive();
 			if (msg != null) {
-				
-				String split[] = msg.getContent().split(";");
-				for (int i = 0; i < split.length; i++) {
-					System.out.println("received: " + split[i]);
-				}
-				
-				switch(split[0]){
+
+				// Split the message so we can use the variables
+				String split[] = msg.getContent().split("[;:]+");
+
+				switch (split[0]) {
 				case "LOCATION":
-					//Create location reply
-					String loc = currentX + ";" + currentY + ";";
-					
-					if(trainState.equals(State.AVAILABLE)){
-						loc += "AVAILABLE";
-					} else{
-						loc += "UNAVAILABLE";
-					}
-					
+
 					ACLMessage reply = msg.createReply();
 					reply.setPerformative(ACLMessage.INFORM);
-					reply.setContent(loc);
+					reply.setContent(getLocation());
 					send(reply);
-					
+					if (showDebugInfo)
+						System.out.println(myAgent.getName()
+								+ " reply on \"LOCATION\": "
+								+ reply.getContent());
 					break;
-					
+				case "DESTINATION":
+					String des = "";
+					if (currentX == destinationX && currentY == destinationY)
+						des = "NONE";
+					else
+						des = (int)destinationX + ";" + (int)destinationY;
+
+					ACLMessage replyDestination = msg.createReply();
+					replyDestination.setPerformative(ACLMessage.INFORM);
+					replyDestination.setContent("DESTINATION:" + des);
+					send(replyDestination);
+					if (showDebugInfo)
+						System.out.println(myAgent.getName()
+								+ " reply on \"DESTINATION\": "
+								+ replyDestination.getContent());
+
+					break;
+
 				case "REJECTED":
-					//Do nothing
+					// Buhuhuhu :'(
+					if(showDebugInfo)
+						System.out.println(getName() + " is Rejected");
+					
 					break;
 				case "GOTO":
-					if (trainState.equals(State.AVAILABLE)) {
-						changeState(State.UNAVAILABLE);
-						destinationX = 4 ;// Integer.getInteger(split[1]);
-						destinationY = 13 ; //Integer.getInteger(split[2]);
-						
-						// Add the TickerBehaviour (period 100 milsec)
-					    myAgent.addBehaviour(new TickerBehaviour(myAgent, 100) {
-					      protected void onTick() {
-					        //System.out.println("Agent "+myAgent.getLocalName()+": tick="+getTickCount());
-					    	  if(!updateLocation()){
-					    		  changeState(State.AVAILABLE);
-					    		  stop();
-					    	  }
-					      } 
-					    });
-						
-					} else {
+
+					if (!goTo(Integer.parseInt(split[1]),
+							Integer.parseInt(split[2]))) {
+
 						// Replay an failure
 						ACLMessage replyFailure = msg.createReply();
 						replyFailure.setPerformative(ACLMessage.INFORM);
 						replyFailure.setContent("FAILURE");
 						send(replyFailure);
+
+						if (showDebugInfo) {
+							String state = "";
+							if (carState.equals(State.UNAVAILABLE))
+								state = "UNAVAILABLE";
+							else
+								state = "AVAILABLE";
+
+							System.out.println(myAgent.getName()
+									+ " reply on \"GOTO\": "
+									+ replyFailure.getContent()
+									+ " (CAR state is: " + state + ")");
+						}
+					} else {
+						changeState(State.UNAVAILABLE);
+						saveMessageForReply = msg;
 					}
-					
+
 					break;
 				default:
-					
+
 					break;
 				}
 
@@ -183,5 +351,4 @@ public class Car extends Agent {
 		}
 	}
 
-	
 }

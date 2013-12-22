@@ -15,21 +15,25 @@ import jade.lang.acl.ACLMessage;
 
 public class Car extends Agent {
 	double currentX = 0, currentY = 0, destinationX, destinationY;
-	State trainState = State.AVAILABLE;
+	State carState = State.AVAILABLE;
 	Behaviour gotoBehaviour, goBackBehaviour;
 	ACLMessage saveMessageForReply;
-
+	
+	//<Settings>
+	boolean showDebugInfo = true;
+	int carSpeedInMil = 100; //The update time in milliseconds
+	int backToGarageTime = 120000; //The time until the car goes back to the garage
+	//</Settings>
+	
+	
 	public enum State {
 		AVAILABLE, UNAVAILABLE
 	}
 
 	protected void setup() {
-		System.out.println("Hello World. I am an Car!");
 
-		// The Receiver of train
+		// Create a new communication behaviour for receiving commands
 		addBehaviour(new ReceiveBehaviour(this));
-
-//		goTo(20, 7);
 
 	}
 
@@ -43,96 +47,119 @@ public class Car extends Agent {
 	 * @return Boolean
 	 */
 	public boolean goTo(int x, int y) {
+		// This method doesn't work when car is unavailable
+		if (carState.equals(State.UNAVAILABLE))
+			return false;
+
+		//Update the destination
+		destinationX = x;
+		destinationY = y;
 		
-		if (trainState.equals(State.AVAILABLE)) {
-			destinationX = x;
-			destinationY = y;
-			resetGoBackBehaviour();
-			
-			try {
-				if (!gotoBehaviour.done())
-					return true;
-			} catch (NullPointerException e) {
+		// When the gotoBehaviour is still working, just update the destination and return true (in case the car is on its way to the garage).
+		try {
+			if (!gotoBehaviour.done()) {
+				return true;
 			}
-
-			// Add the TickerBehaviour (period 1000 milsec)
-			gotoBehaviour = new TickerBehaviour(this, 1000) {
-				protected void onTick() {
-					// System.out.println("Agent "+myAgent.getLocalName()+": tick="+getTickCount());
-					if (!updateLocation()) {
-						if (trainState == State.UNAVAILABLE) {
-							// Replay the Accomplished
-							ACLMessage replyAccomplished = saveMessageForReply
-									.createReply();
-							replyAccomplished
-									.setPerformative(ACLMessage.INFORM);
-							replyAccomplished.setContent("ACCOMPLISHED");
-							send(replyAccomplished);
-						}
-						changeState(State.AVAILABLE);
-						resetGoBackBehaviour();
-						if(currentX == 0 && currentY== 0)
-							myAgent.doDelete();
-						stop();
-					}
-				}
-			};
-
-			addBehaviour(gotoBehaviour);
-
-			return true;
+		} catch (NullPointerException e) {
 		}
-		return false;
+
+		// Add the TickerBehaviour (period 100 milsec)
+		gotoBehaviour = new TickerBehaviour(this, carSpeedInMil) {
+			protected void onTick() {
+
+				// true when car is arrived at destination
+				if (updateLocation()) {
+					if (carState == State.UNAVAILABLE) {
+						
+						// Reply the Accomplished
+						ACLMessage replyAccomplished = saveMessageForReply
+								.createReply();
+						replyAccomplished.setPerformative(ACLMessage.INFORM);
+						replyAccomplished.setContent("ACCOMPLISHED");
+						send(replyAccomplished);
+						
+						if (showDebugInfo)
+							System.out.println(getName()
+									+ " reply for \"GOTO\": "
+									+ replyAccomplished.getContent());
+					}
+					changeState(State.AVAILABLE);
+					
+					//Checks if car is back to base
+					if (currentX == 0 && currentY == 0) {
+						if (showDebugInfo)
+							System.out
+									.println(getName()
+											+ " is arrived in the garage, commits suicide.");
+						myAgent.doDelete();
+					}
+					stop();
+				}
+			}
+		};
+
+		addBehaviour(gotoBehaviour);
+
+		return true;
 
 	}
-	
+
 	/**
-	 * Reset the goback behaviour
+	 * Reset the goback behaviour, the goback behaviour is used when the car isn't used for 120 seconds, and sends the car back to the garage.
 	 */
-	public void resetGoBackBehaviour(){
-		
-		try{
+	public void resetGoBackBehaviour() {
+
+		try {
 			goBackBehaviour.reset();
-		} catch (NullPointerException e){
-			
-			goBackBehaviour = new WakerBehaviour(this, 120000) {
+			if (showDebugInfo)
+				System.out.println(getName() + " goBackBehaviour is resetted");
+
+		} catch (NullPointerException e) {
+			if (showDebugInfo)
+				System.out
+						.println(getName()
+								+ " Create a whole new goBackBehaviour (only one time)");
+
+			goBackBehaviour = new WakerBehaviour(this, backToGarageTime) {
 				protected void handleElapsedTimeout() {
-					System.out.println(myAgent.getName() + " - Goes back to base");
-					
-					if(!goTo(0, 0))
+					if (showDebugInfo)
+						System.out.println(myAgent.getName()
+								+ " Goes back to base.");
+
+					if (!goTo(0, 0))
 						this.reset();
 				}
 			};
 			addBehaviour(goBackBehaviour);
 		}
-		
+
 	}
 
 	/**
-	 * Return the location
+	 * Return the location, this method is used to respond to a Station if he request LOCATION.
 	 * 
-	 * @return int[] (int[0] = x and int[1] = y)
+	 * @return String LOCATION:X;Y;AVAILABLE/UNAVAILABLE
 	 */
 	private String getLocation() {
 		// Create location reply
-		String loc = "LOCATION:" + currentX + ";" + currentY + ";";
+		String location = "LOCATION:" + (int) currentX + ";" + (int) currentY + ";";
 
-		if (trainState.equals(State.AVAILABLE)) {
-			loc += "AVAILABLE";
+		if (carState.equals(State.AVAILABLE)) {
+			location += "AVAILABLE";
 		} else {
-			loc += "UNAVAILABLE";
+			location += "UNAVAILABLE";
 		}
 
-		return loc;
+		return location;
 	}
 
 	/**
 	 * Let the car move (the shortest path)
 	 * 
-	 * @return true if the train has moved
+	 * @return true if arrived at destination
 	 */
 	private boolean updateLocation() {
-		System.out.println("update Location");
+		resetGoBackBehaviour();
 
 		double diffx = 0, diffy = 0;
 
@@ -141,7 +168,7 @@ public class Car extends Agent {
 
 		if (diffx != 0 && diffy != 0) {
 
-			if (diffx > diffy) {
+			if (Math.abs(diffx) < Math.abs(diffy)) {
 				// Devide only with positive numbers
 				double smalStep = Math.abs(diffx) / Math.abs(diffy);
 
@@ -187,15 +214,14 @@ public class Car extends Agent {
 				currentX -= 1;
 
 		}
-		// System.out.println("Diff x: " + diffx + " - Diff y: " + diffy);
-
+		
 		// Show car in an field (test purposes)
-//		showRaster();
+		// showRaster();
 
 		if (currentX == destinationX && currentY == destinationY)
-			return false;
+			return true;
 
-		return true;
+		return false;
 	}
 
 	/**
@@ -210,8 +236,8 @@ public class Car extends Agent {
 				map[h][g] = " ";
 			}
 		}
-		map[(int) currentX][(int) currentY] = "c";
 		map[(int) destinationX][(int) destinationY] = "d";
+		map[(int) currentX][(int) currentY] = "c";
 
 		for (int i = 0; i < map.length; i++) {
 			for (int j = 0; j < map.length; j++) {
@@ -229,15 +255,13 @@ public class Car extends Agent {
 	 *            State enum
 	 */
 	public void changeState(State state) {
-		trainState = state;
-		// System.out.println("State changed " + state + " to "
-		// + getAID().getLocalName());
-
+		carState = state;
 	}
 
 	/**
 	 * 
-	 * @author Michiel A class
+	 * @author Michiel 
+	 * A CyclicBehaviour class that handles all the received messages.
 	 */
 	class ReceiveBehaviour extends CyclicBehaviour {
 
@@ -259,25 +283,34 @@ public class Car extends Agent {
 					reply.setPerformative(ACLMessage.INFORM);
 					reply.setContent(getLocation());
 					send(reply);
-
-					System.out.println(reply.getContent());
+					if (showDebugInfo)
+						System.out.println(myAgent.getName()
+								+ " reply on \"LOCATION\": "
+								+ reply.getContent());
 					break;
 				case "DESTINATION":
 					String des = "";
 					if (currentX == destinationX && currentY == destinationY)
 						des = "NONE";
 					else
-						des = destinationX + ";" + destinationY;
+						des = (int)destinationX + ";" + (int)destinationY;
 
 					ACLMessage replyDestination = msg.createReply();
 					replyDestination.setPerformative(ACLMessage.INFORM);
 					replyDestination.setContent("DESTINATION:" + des);
 					send(replyDestination);
+					if (showDebugInfo)
+						System.out.println(myAgent.getName()
+								+ " reply on \"DESTINATION\": "
+								+ replyDestination.getContent());
 
 					break;
 
 				case "REJECTED":
 					// Buhuhuhu :'(
+					if(showDebugInfo)
+						System.out.println(getName() + " is Rejected");
+					
 					break;
 				case "GOTO":
 
@@ -289,10 +322,24 @@ public class Car extends Agent {
 						replyFailure.setPerformative(ACLMessage.INFORM);
 						replyFailure.setContent("FAILURE");
 						send(replyFailure);
-					} else{
+
+						if (showDebugInfo) {
+							String state = "";
+							if (carState.equals(State.UNAVAILABLE))
+								state = "UNAVAILABLE";
+							else
+								state = "AVAILABLE";
+
+							System.out.println(myAgent.getName()
+									+ " reply on \"GOTO\": "
+									+ replyFailure.getContent()
+									+ " (CAR state is: " + state + ")");
+						}
+					} else {
 						changeState(State.UNAVAILABLE);
 						saveMessageForReply = msg;
 					}
+
 					break;
 				default:
 

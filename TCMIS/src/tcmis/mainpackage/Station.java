@@ -21,18 +21,19 @@ import java.util.ArrayList;
 import java.util.Dictionary;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 import tcmis.mainpackage.Car.ReceiveBehaviour;
 
 public class Station extends Agent {
 	private int positionX, positionY;
-	Dictionary<Car, Station> request;
+
 	private String rememberAgent;
 	private SearchConstraints c = new SearchConstraints();
 
 	protected void setup() {
-		c.setMaxResults (new Long(-1));
+		c.setMaxResults(new Long(-1));
 	}
 
 	/**
@@ -55,126 +56,225 @@ public class Station extends Agent {
 		width = x1 - x2;// 10 - 500 = -490
 		height = y1 - y2; // 20 - 100 = -80
 		// als de hoogte kleiner is dan 0 wordt de negatieve breedte positief.
-		if (height < 0) {
-			height *= -1;// -490 * -1= 490
-		}
 		// stelling van pytagoras
-		// als de breedte kleiner is dan 0 wordt de negatieve breedte positief.
-		if (width < 0) {
-			width *= -1; // -80 * -1 = 80;
-		}
-		// sqrt(490*490 + 80 * 80) = sqrt(240100 + 6400) = sqrt (246800) =
+		// sqrt((-490*-490) + (-80 * -80)) = sqrt(240100 + 6400) = sqrt (246800)
+		// =
 		result = Math.sqrt((height * height) + (width * width));
 
 		return result;
 
 	}
 
-	public static void main(String[] args) {
-		Station stat = new Station();
-		System.out.println(stat.calculateDistance(10, 20, 500, 100));
-	}
-
-
-	private void addRequest(int x, int y) {
-
-	}
-
-	private void spawnTrain(int gotoX, int gotoY) {
-
-	}
-	
-	private void addRecievers(ACLMessage msg, String agent){
+	/**
+	 * Stopt de reciever aan de ACL waardoor je het bericht makkelijk aan
+	 * meerdere mensen kan sturen.
+	 * 
+	 * @param msg
+	 *            de message
+	 * @param agent
+	 *            de agent naam of agent groep waar je het bericht naar stuurt.
+	 */
+	private void addRecievers(ACLMessage msg, String agent) {
 		try {
-			AMSAgentDescription [] agents = 
-					AMSService.search( this, new AMSAgentDescription (), c );
-			for (int i=0; i<agents.length;i++)
-				if(agents[i].getName().getLocalName().toLowerCase().contains(agent))
-					msg.addReceiver( agents[i].getName()); 
+			AMSAgentDescription[] agents = AMSService.search(this,
+					new AMSAgentDescription(), c);
+			for (int i = 0; i < agents.length; i++)
+				if (agents[i].getName().getLocalName().toLowerCase()
+						.contains(agent)||agents[i].getName().getLocalName().toLowerCase()
+						.contains("GARAGE_"))//checkt of de agents bij bijvoorbeeld CAR_ horen. of hij checkt de garage
+					msg.addReceiver(agents[i].getName());
 		} catch (FIPAException e) {
-			System.out.println("HOUSTON WE HAVE A PROBLEM LOOKING FOR FEDERAL AGENTS.");
-		};
+			System.out
+					.println("HOUSTON WE HAVE A PROBLEM LOOKING FOR FEDERAL AGENTS.");
+		}
+		;
 	}
-	
-	class RecieveBehavior extends CyclicBehaviour{
 
-		
-        
-		RecieveBehavior(Agent a){
+	/**
+	 * gets the total amount of a type of agent.
+	 * 
+	 * @param agent
+	 * @return 0 - infinity
+	 */
+	private int getTotalRecievers(String agent) {
+		int length = 0;
+		try {
+			AMSAgentDescription[] agents = AMSService.search(this,
+					new AMSAgentDescription(), c);
+			for (int i = 0; i < agents.length; i++) {
+				if (agents[i].getName().getLocalName().toLowerCase()
+						.contains(agent.toLowerCase())) {
+					length++;
+				}
+				;
+			}
+		} catch (FIPAException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return length;
+
+	}
+
+	private class RecieveBehavior extends CyclicBehaviour {
+
+		List<Double> pythagorasList = new ArrayList<Double>();
+		Map<Double, AID> request = new HashMap<Double, AID>();
+		int currentPosition = 0;
+
+		public RecieveBehavior(Agent a) {
 			super(a);
 		}
-		
+
 		@Override
 		public void action() {
 			ACLMessage msg = receive();
 			receiveRequest(msg);
 			// TODO Auto-generated method stub
-			
+
 		}
 
 		/**
 		 * receiveRequest handles all the requests that the station receives.
+		 * 
 		 * @param request
 		 */
 		private void receiveRequest(ACLMessage msg) {
 			// TODO: get requests and
 			ACLMessage reply = msg.createReply();
-			
-			
-			switch(requestSelector(msg.getContent())){
+
+			switch (requestSelector(msg.getContent())) {
 			case 0:
-				//TODO: determine the car closest to the station.
-				
+				// TODO: determine the car closest to the station.
+				addAvailableCars(msg);
+				if (currentPosition > getTotalRecievers("CAR_")) {
+					sendRejectedAndAccepted(msg);
+					request.clear(); // maakt de lijsten leeg zodat ze weer
+										// opnieuw gebruikt kunnen worden.
+					pythagorasList.clear();
+					currentPosition = 0;// zet de positie weer op null
+				}
+				currentPosition++;
 				break;
 			case 1:
-				//TODO: send location to monitor
+				// TODO: send location to monitor
+				reply.setPerformative(ACLMessage.INFORM);
+				reply.setContent("");
+				addRecievers(msg, "MONITOR");
+				send(reply);
 				break;
 			case 2:
-				//TODO: request locations of Cars
+				// TODO: request locations of Cars
 				reply.setPerformative(ACLMessage.INFORM);
 				reply.setContent("LOCATION");
 				addRecievers(msg, "CAR_");
 				send(reply);
 				break;
 			case 3:
-				//TODO: send car to his destination
+				// TODO: send car to his destination
+				reply.setPerformative(ACLMessage.INFORM);
+				//reply.setContent(sendCarToDestination(x, y));
 				break;
 			default:
 				System.out.println("Recieved Command not recognized.");
-				break;	
+				break;
 			}
 		}
-		
+
 		/**
+		 * In deze methode wordt er gesplitst op ';' karakter. De gesplitse
+		 * waardes worden gebruikt om de pythagoras waarde van de car naar het
+		 * station te berekenen. deze worden ook in een apparte pythagoras lijst
+		 * gezet. deze lijst wordt gebruikt om het meest dichtsbij- zijnde car
+		 * te berekenen
 		 * 
+		 * @param msg
+		 *            de acl message die binnen is gekomen.
 		 */
-		private AID getClosestCar(ACLMessage msg){
-			AID aid = null;
-			Map<Integer, AID> agentList = new HashMap<Integer, AID>();
-			String params[] = msg.getContent().replace("LOCATION:", "").split(";");
-			
-			if("UNAVAILABLE".contains(params[2])){
-				//TODO: Do not add to the list
-			}else if ("AVAILABLE".contains(params[2])){
-				
-			}else {
-			System.out.println("Something went wrong");
-			
+		private void addAvailableCars(ACLMessage msg) {
+			String params[] = msg.getContent().replace("LOCATION:", "")
+					.split(";");
+
+			if ("UNAVAILABLE".contains(params[2])) {
+				// TODO: Do Nothing
+			} else if ("AVAILABLE".contains(params[2])) {
+				double pythagoras = calculateDistance(positionX, positionY,
+						Integer.valueOf(params[0]), Integer.valueOf(params[1]));
+				pythagorasList.add(pythagoras);// maakt een lijst met alle
+												// nummers aan zodat je daar mee
+												// kan rekenen welke car het
+				// dichtsbij staat
+				request.put(pythagoras, msg.getSender()); // gebruikt de
+															// pythagoras
+															// waardes als een
+															// sleutel waarmee
+															// je de verzender
+				// kunt opvragen.
+			} else {
+				System.out.println("Something went wrong");
 			}
-			return aid;
 		}
-		
-		
-		
+
+		/**
+		 * berekend de dichsbijzijnste car aan de hand van de pythagorasList.
+		 * 
+		 * @return
+		 */
+		private double getClosestCar() {
+			Double currentKey = null;
+			for (Double value : pythagorasList) {
+				if (currentKey == null) {
+					currentKey = value;
+				} else {
+					if (value < currentKey) {
+						currentKey = value;
+					}
+				}
+			}
+			return currentKey;
+		}
+
+		/**'
+		 * Deze methode stuurt één car naar de coördinaten van het station. 
+		 * waarna hij naar de andere cars REJECTED
+		 * @param msg
+		 */
+		private void sendRejectedAndAccepted(ACLMessage msg) {
+
+			double closestCarKey = getClosestCar(); // pakt de dichtsbeizijnde
+													// Car
+			for (Double value : pythagorasList) {
+				ACLMessage reply = msg.createReply();// maakt een niewe reply
+														// aan want anders
+														// gebruikt
+				// hij steeds dezelfde reply en stuurt hij het steeds aan steeds
+				// meer agents door.
+				reply.setPerformative(ACLMessage.INFORM);
+				AID aid = null;
+				if (value == closestCarKey) {
+					aid = request.get(value);
+					reply.setContent(sendCarToDestination(positionX, positionY));
+				} else {
+					aid = request.get(value);
+					reply.setContent("REJECTED");
+				}
+
+				reply.addReceiver(aid);
+				send(reply);
+
+			}
+		}
+
 		/**
 		 * send car to his locations
+		 * 
 		 * @param x
 		 * @param y
 		 * @return GOTO:X;Y
 		 */
-		private String sendCarToDestination(int x, int y){
-			return "GOTO:"+x+";"+y;
-			
+		private String sendCarToDestination(int x, int y) {
+			return "GOTO:" + x + ";" + y;
+
 		}
 
 		/**
@@ -184,7 +284,8 @@ public class Station extends Agent {
 		 * @return 0 till 3 or a -1 if request is not known.
 		 */
 		private int requestSelector(String str) {
-			String list[] = { "LOCATION:", "LOCATION", "FAILURE", "ACCOMPLISHED"};
+			String list[] = { "LOCATION:", "LOCATION", "FAILURE",
+					"ACCOMPLISHED" };
 			if (":".contains(str)) {
 				return 0;
 			} else {
@@ -196,7 +297,7 @@ public class Station extends Agent {
 			}
 			return -1;
 		}
-		
+
 	}
-	
+
 }

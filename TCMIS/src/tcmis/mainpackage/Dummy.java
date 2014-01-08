@@ -30,8 +30,7 @@ public class Dummy extends Agent {
 				}
 
 				for (int i = 0; i < agents.length; i++)
-					if (agents[i].getName().getLocalName().toLowerCase()
-							.contains("station"))
+					if (agents[i].getName().getLocalName().contains("STATION_"))
 						stations[i] = agents[i];
 
 				ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
@@ -44,7 +43,7 @@ public class Dummy extends Agent {
 						.getName());
 				send(msg);
 				try {
-					Thread.sleep(1000);
+					Thread.sleep(5000);
 				} catch (Exception e) {
 					System.out.println("Problem sleeping: " + e);
 					e.printStackTrace();

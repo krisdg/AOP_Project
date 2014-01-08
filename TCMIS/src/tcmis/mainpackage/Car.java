@@ -14,7 +14,7 @@ import jade.core.behaviours.WakerBehaviour;
 import jade.lang.acl.ACLMessage;
 
 public class Car extends Agent {
-	double currentX = 0, currentY = 0, destinationX, destinationY;
+	double currentX = 0, currentY = 0, destinationX=0, destinationY=0;
 	State carState = State.AVAILABLE;
 	Behaviour gotoBehaviour, goBackBehaviour;
 	ACLMessage saveMessageForReply;
@@ -304,6 +304,25 @@ public class Car extends Agent {
 								+ " reply on \"DESTINATION\": "
 								+ replyDestination.getContent());
 
+					break;
+					
+				case "LOCDES":
+					ACLMessage replyLocDes = msg.createReply();
+					replyLocDes.setPerformative(ACLMessage.INFORM);
+					
+					String locDes = "LOCDES:";
+					locDes += (int)currentX + ";" + (int)currentY  + ";" + (int)destinationX + ";"+ (int)destinationY + ":";
+					if(carState.equals(State.AVAILABLE))
+							locDes += "AVAILABLE";
+					else if(carState.equals(State.UNAVAILABLE))
+						locDes += "UNAVAILABLE";
+					
+					replyLocDes.setContent(locDes);
+					send(replyLocDes);
+					if (showDebugInfo)
+						System.out.println(myAgent.getName()
+								+ " reply on \"LOCDES\": "
+								+ replyLocDes.getContent());
 					break;
 
 				case "REJECTED":

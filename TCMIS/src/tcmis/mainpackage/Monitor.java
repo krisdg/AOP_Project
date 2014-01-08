@@ -51,48 +51,61 @@ public class Monitor extends GuiAgent {
 							+ " received: " + msg.getContent());
 
 					if (msg.getSender().getLocalName().startsWith("CAR_")) {
-						if (msg.getContent().startsWith("LOCATION:")) {
-							String[] message = msg.getContent().replaceAll("LOCATION:", "").split(";");
+						if (msg.getContent().startsWith("LOCDES:")) {
+							String[] message = msg.getContent().replaceAll("LOCDES:", "").split(":");
+							String[] locdes = message[0].split(";");
 							
-							int x = Integer.parseInt(message[0]);
-							int y = Integer.parseInt(message[1]);
+							int locx = Integer.parseInt(locdes[0]);
+							int locy = Integer.parseInt(locdes[1]);
+							int desx = Integer.parseInt(locdes[2]);
+							int desy = Integer.parseInt(locdes[3]);
 							
 							Color color;
 							
-							if (message[2].equals("AVAILABLE")) {
+							if (message[1].equals("AVAILABLE")) {
 								color = new Color(0, 190, 0);
 							} else {
 								color = new Color(190, 0, 0);
 							}
 							
-							gui.addCar(x, y, x, y, color, msg.getSender().getLocalName());
+							gui.addCar(locx, locy, desx, desy, color, msg.getSender().getLocalName());
 						}
 					}
 					if (msg.getSender().getLocalName().startsWith("STATION_")) {
 						if (msg.getContent().startsWith("LOCATION:")) {
-							String[] message = msg.getContent().replaceAll("LOCATION:", "").split(";");
+							String[] loc = msg.getContent().replaceAll("LOCATION:", "").split(";");
 							
 							String stationID = msg.getSender().getLocalName().replaceAll("STATION_", "");
 							
-							int x = Integer.parseInt(message[0]);
-							int y = Integer.parseInt(message[1]);
+							int x = Integer.parseInt(loc[0]);
+							int y = Integer.parseInt(loc[1]);
 							
 							gui.addStation(x, y, Color.BLACK, stationID);
 						}
 					}
 				}
+
+				block();
 			}
 		});
 		
-		Timer timer = new Timer();
-        timer.scheduleAtFixedRate(new TimerTask() {
+		addBehaviour(new CyclicBehaviour(this) 
+		{
+			private static final long serialVersionUID = 1L;
 
-            @Override
-            public void run() {
-        		System.out.println("refresh");
+			public void action() {
+				System.out.println("refresh");
         		broadCastLocation();
-            }
-        }, 100, 500);
+        		
+				try {
+					Thread.sleep(500);
+				} catch (Exception e) {
+					System.out.println("Problem sleeping: " + e);
+					e.printStackTrace();
+				}
+				block();
+			}
+		});
 	}
 	
 	public void broadCastLocation() {
@@ -107,7 +120,7 @@ public class Monitor extends GuiAgent {
 		
 		//Broadcast to all cars and stations.
 		for (int i=0; i<agents.length;i++) {
-			if(agents[i].getLocalName().startsWith("CAR_") || agents[i].getLocalName().startsWith("STATION_")) {
+			if(agents[i].getLocalName().startsWith("STATION_")) {
 				msg1.addReceiver(agents[i]); 
 				receivers++;
 			}
@@ -120,7 +133,7 @@ public class Monitor extends GuiAgent {
 		
 		//Ask all cars for their destination
 		ACLMessage msg2 = new ACLMessage(ACLMessage.INFORM);
-		msg2.setContent("DESTINATION");
+		msg2.setContent("LOCDES");
 
 		//Broadcast to all cars and stations.
 		for (int i=0; i<agents.length;i++) {
@@ -135,7 +148,7 @@ public class Monitor extends GuiAgent {
 	}
 
 	public AID[] getAgents() {
-		AMSAgentDescription[] AMSAgents;
+		AMSAgentDescription[] AMSAgents = null;
 		List<AID> agents = new ArrayList<AID>();
 		try {
 			SearchConstraints c = new SearchConstraints();

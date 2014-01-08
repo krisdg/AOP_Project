@@ -69,6 +69,10 @@ public class MonitorGUI extends JFrame {
 		canvas.initialize();
 	}
 
+	public void redraw() {
+		canvas.redraw();
+	}
+
 }
 
 class Overview
@@ -116,7 +120,6 @@ class Overview
         g.drawString(name, curX + 14, curY + 14);
         
         g.dispose();
-        view.repaint();
     }
 
     public void addStation(int statX, int statY, Color color, String name) {
@@ -132,6 +135,9 @@ class Overview
         g.drawString(name, statX - 4, statY + 4);
         
         g.dispose();
+    }
+    
+    public void redraw() {
         view.repaint();
     }
 }

@@ -12,7 +12,9 @@ import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import tcmis.mainpackage.Car.ReceiveBehaviour;
 import jade.core.AID;
+import jade.core.Agent;
 import jade.core.behaviours.CyclicBehaviour;
 import jade.domain.AMSService;
 import jade.domain.FIPAAgentManagement.AMSAgentDescription;
@@ -35,70 +37,25 @@ public class Monitor extends GuiAgent {
 	public static final int CONTINUE_EVENT = 1003;
 	public static final int REFRESH_EVENT = 1004;
 	public static final int CLONE_EVENT = 1005;
+	
+	public List<String[]> elementsToDraw = new ArrayList<>();
+	public List<String> elementsDrawn = new ArrayList<>();
 
 	public void setup() {
 		// creates and shows the GUI
 		gui = new MonitorGUI(this);
 		
-		addBehaviour(new CyclicBehaviour(this) 
-		{
-			private static final long serialVersionUID = 1L;
-
-			public void action() {
-				ACLMessage msg = receive();
-				if (msg != null) {
-					System.out.println(" - " + myAgent.getLocalName()
-							+ " received: " + msg.getContent());
-
-					if (msg.getSender().getLocalName().startsWith("CAR_")) {
-						if (msg.getContent().startsWith("LOCDES:")) {
-							String[] message = msg.getContent().replaceAll("LOCDES:", "").split(":");
-							String[] locdes = message[0].split(";");
-							
-							int locx = Integer.parseInt(locdes[0]);
-							int locy = Integer.parseInt(locdes[1]);
-							int desx = Integer.parseInt(locdes[2]);
-							int desy = Integer.parseInt(locdes[3]);
-							
-							Color color;
-							
-							if (message[1].equals("AVAILABLE")) {
-								color = new Color(0, 190, 0);
-							} else {
-								color = new Color(190, 0, 0);
-							}
-							
-							gui.addCar(locx, locy, desx, desy, color, msg.getSender().getLocalName());
-						}
-					}
-					if (msg.getSender().getLocalName().startsWith("STATION_")) {
-						if (msg.getContent().startsWith("LOCATION:")) {
-							String[] loc = msg.getContent().replaceAll("LOCATION:", "").split(";");
-							
-							String stationID = msg.getSender().getLocalName().replaceAll("STATION_", "");
-							
-							int x = Integer.parseInt(loc[0]);
-							int y = Integer.parseInt(loc[1]);
-							
-							gui.addStation(x, y, Color.BLACK, stationID);
-						}
-					}
-				}
-
-				block();
-			}
-		});
+		addBehaviour(new ReceiveBehaviour(this));
 		
 		addBehaviour(new CyclicBehaviour(this) 
 		{
 			private static final long serialVersionUID = 1L;
 
 			public void action() {
-				System.out.println("refresh");
         		broadCastLocation();
         		
 				try {
-					Thread.sleep(500);
+					Thread.sleep(200);
 				} catch (Exception e) {
 					System.out.println("Problem sleeping: " + e);
 					e.printStackTrace();
@@ -109,7 +66,8 @@ public class Monitor extends GuiAgent {
 	}
 	
 	public void broadCastLocation() {
-		gui.clearOverview();
+		refreshGUI();
+		
 		AID[] agents = getAgents();
 		
 		//Ask all cars and stations for their location
@@ -145,6 +103,7 @@ public class Monitor extends GuiAgent {
 
 		if (receivers > 0)
 			send(msg2);
+			
 	}
 
 	public AID[] getAgents() {
@@ -170,6 +129,53 @@ public class Monitor extends GuiAgent {
 
 		return agents.toArray(new AID[agents.size()]);
 	}
+	
+	void refreshGUI() {
+		if (elementsToDraw.size() > 0) {
+			gui.clearOverview();
+			
+			for (int x = 0; x < elementsToDraw.size(); x++) {
+				String[] message = elementsToDraw.get(x)[1].split(":");
+				
+				if (elementsDrawn.contains(elementsToDraw.get(x)[0]) == false) {
+					if (message[0].startsWith("CAR")) {
+						String[] locdes = message[2].split(";");
+						
+						int locx = Integer.parseInt(locdes[0]);
+						int locy = Integer.parseInt(locdes[1]);
+						int desx = Integer.parseInt(locdes[2]);
+						int desy = Integer.parseInt(locdes[3]);
+						
+						Color color;
+						
+						if (message[3].equals("AVAILABLE")) {
+							color = new Color(0, 190, 0);
+						} else {
+							color = new Color(190, 0, 0);
+						}
+						
+						gui.addCar(locx, locy, desx, desy, color, message[0]);
+					}
+		
+					if (message[0].startsWith("STATION")) {
+						String stationID = message[0].replaceAll("STATION_", "");
+						String[] loc = message[2].split(";");
+						
+						int locx = Integer.parseInt(loc[0]);
+						int locy = Integer.parseInt(loc[1]);
+						
+						gui.addStation(locx, locy, Color.BLACK, stationID);
+					}
+					elementsDrawn.add(elementsToDraw.get(x)[0]);
+				}
+			}
+			
+			gui.redraw();
+			
+			elementsToDraw.clear();
+			elementsDrawn.clear();
+		}
+	}
 
 	// AGENT OPERATIONS FOLLOWING GUI EVENTS
 	protected void onGuiEvent(GuiEvent ev) {
@@ -187,7 +193,43 @@ public class Monitor extends GuiAgent {
 		case REFRESH_EVENT:
 			break;
 		}
-
 	}
+	
+	class ReceiveBehaviour extends CyclicBehaviour {
 
+		/**
+		 * 
+		 */
+		private static final long serialVersionUID = 1L;
+
+		public ReceiveBehaviour(GuiAgent a) {
+			super(a);
+		}
+
+		public void action() {
+			while(true) {
+				ACLMessage msg = receive();
+				
+				if (msg != null) {
+					System.out.println(" - " + myAgent.getLocalName()
+							+ " received: " + msg.getContent() + " from: " + msg.getSender().getLocalName());
+	
+					if (msg.getSender().getLocalName().startsWith("CAR_")) {
+						if (msg.getContent().startsWith("LOCDES:")) {
+							elementsToDraw.add(new String[] {msg.getSender().getLocalName(), msg.getSender().getLocalName() + ":" + msg.getContent()});
+						}
+					}
+					if (msg.getSender().getLocalName().startsWith("STATION_")) {
+						if (msg.getContent().startsWith("LOCATION:")) {
+							elementsToDraw.add(new String[] {msg.getSender().getLocalName(), msg.getSender().getLocalName() + ":" + msg.getContent()});
+						}
+					}
+				} else {
+					break;
+				}
+			}
+			
+			block();
+		}
+	}
 }

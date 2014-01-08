@@ -25,8 +25,10 @@ import java.util.Map;
 
 @SuppressWarnings("serial")
 public class Station extends Agent {
-	private int positionX = 0, positionY = 0, derp = 0;
+	private int positionX = 50, positionY = 50;
+	private int destinationX= 0, destinationY=0;
 	private boolean showDebugInfo = true;
+	private List<AID> memento = new ArrayList<AID>();
 
 	// private String rememberAgent;
 	private SearchConstraints c = new SearchConstraints();
@@ -86,7 +88,6 @@ public class Station extends Agent {
 											// checkt de garage
 					msg.addReceiver(agents[i].getName());
 					System.out.println(agents[i].getName().getName());
-					derp++;
 				}
 			}
 		} catch (FIPAException e) {
@@ -136,7 +137,6 @@ public class Station extends Agent {
 		public void action() {
 			ACLMessage msg = receive();
 			if (msg != null) {
-				System.out.println("DERP" + test++);
 				receiveRequest(msg);
 			}
 			block();
@@ -160,7 +160,8 @@ public class Station extends Agent {
 				addAvailableCars(msg);
 				numberOfCars++;
 				if (numberOfCars >= getTotalRecievers("CAR_")) {
-					sendRejectedAndAccepted(msg);
+					System.out.println("Do i get here?!");
+					sendRejectedAndAccepted();
 					carList.clear(); // maakt de lijsten leeg zodat ze weer
 										// opnieuw gebruikt kunnen worden.
 					numberOfCars = 0;
@@ -189,9 +190,30 @@ public class Station extends Agent {
 				send(reply);
 				break;
 			case 3:
+				try {
+					Thread.sleep(100);
+					if(!memento.contains(msg.getSender())){
+					ACLMessage destination = msg.createReply();
+					destination.setPerformative(ACLMessage.INFORM);
+					destination.setContent(sendCarToDestination(destinationX, destinationY));
+					memento.add( msg.getSender());
+					if(showDebugInfo){
+						System.out.println(myAgent.getName()+ " reply \"ACCOMPLISHED\":"+destination.getContent());
+					//	System.out.println(destination.toString());
+					}
+					//addRecievers(reply, msg.getSender().getName());
+					send(destination);
+					}else{
+						memento.remove(msg.getSender());
+					}
+					
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
 				// TODO: send car to his destination
 				// reply.setPerformative(ACLMessage.INFORM);
 				// reply.setContent(sendCarToDestination(x, y));
+				
 				break;
 			default:
 				System.out.println("Recieved Command not recognized.");
@@ -223,7 +245,7 @@ public class Station extends Agent {
 				carList.put(calculateDistance(positionX, positionY, 0, 0), null);
 			}
 
-			if ("AVAILABLE".contentEquals(params[2])) {
+			if ("AVAILABLE".contentEquals(params[2])) {//Check of beschikbaar
 				double pythagoras = calculateDistance(positionX, positionY,
 						Integer.valueOf(params[0]), Integer.valueOf(params[1]));
 				if (!carList.containsValue(msg.getSender())) {
@@ -261,21 +283,19 @@ public class Station extends Agent {
 		/**
 		 * Deze methode stuurt één car naar de coördinaten van het station.
 		 * waarna hij naar de andere cars REJECTED
-		 * 
-		 * @param msg
 		 */
-		private void sendRejectedAndAccepted(ACLMessage msg) {
-
+		private void sendRejectedAndAccepted() {
+			
 			double closestCarKey = getClosestCar(); // pakt de dichtsbeizijnde Car
 
 			Iterator<Double> it = carList.keySet().iterator();
 			AID acceptedAID = carList.get(closestCarKey);
 
-			ACLMessage rejectedReply = msg.createReply();
+			ACLMessage rejectedReply = new ACLMessage(ACLMessage.INFORM);
 			rejectedReply.setPerformative(ACLMessage.INFORM);
 			
 			if(acceptedAID != null){
-				ACLMessage acceptedReply = msg.createReply();
+				ACLMessage acceptedReply = new ACLMessage(ACLMessage.INFORM);
 				acceptedReply.setPerformative(ACLMessage.INFORM);
 				acceptedReply.addReceiver(acceptedAID);
 				acceptedReply.setContent(sendCarToDestination(positionX, positionY));
@@ -311,11 +331,11 @@ public class Station extends Agent {
 		 * Method to determine what request is received.
 		 * 
 		 * @param str
-		 * @return 0 till 3 or a -1 if request is not known.
+		 * @return 0 tot 3 of een -1 als de request niet bekend is.
 		 */
 		private int requestSelector(String str) {
 			String list[] = { "LOCATION:", "LOCATION", "FAILURE",
-					"ACCOMPLISHED" };
+					"ACCOMPLISHED"};
 			if (str.contains(":")) {
 				return 0;
 			} else {

@@ -36,13 +36,11 @@ public class Station extends Agent {
 	protected void setup() {
 		c.setMaxResults(new Long(-1));
 		this.addBehaviour(new RecieveBehavior(this));
-
+		
 		//Set location: (Give arguments: x;y on creation)
 		Object[] args = getArguments();
 		positionX = Integer.parseInt(args[0].toString().split(";")[0]);
 		positionY = Integer.parseInt(args[0].toString().split(";")[1]);
-		
-		System.out.println(positionX + ";" + positionY);
 	}
 
 	/**
@@ -225,6 +223,8 @@ public class Station extends Agent {
 				//TODO
 				//REQUEST CAR
 				//WHEN ARRIVED, SEND CAR TO DESTINATION/PARAMETER0
+
+				break;
 			default:
 				System.out.println("Recieved Command not recognized.");
 				break;
@@ -341,12 +341,12 @@ public class Station extends Agent {
 		 * Method to determine what request is received.
 		 * 
 		 * @param str
-		 * @return 0 tot 3 of een -1 als de request niet bekend is.
+		 * @return 0 tot 4 of een -1 als de request niet bekend is.
 		 */
 		private int requestSelector(String str) {
 			String list[] = { "LOCATION:", "LOCATION", "FAILURE",
 					"ACCOMPLISHED", "ADDREQUEST"};
-			if (str.contains(":")) {
+			if (str.startsWith(":")) {
 				return 0;
 			} else {
 				for (int i = 1; i < list.length; i++) {

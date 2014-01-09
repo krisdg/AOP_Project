@@ -20,7 +20,7 @@ public class Car extends Agent {
 	ACLMessage saveMessageForReply;
 	
 	//<Settings>
-	boolean showDebugInfo = true;
+	boolean showDebugInfo = false;
 	int carSpeedInMil = 100; //The update time in milliseconds
 	int backToGarageTime = 120000; //The time until the car goes back to the garage
 	//</Settings>

@@ -13,21 +13,29 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 import tcmis.mainpackage.Car.ReceiveBehaviour;
+import jade.content.lang.sl.SLCodec;
+import jade.content.onto.basic.Action;
 import jade.core.AID;
 import jade.core.Agent;
+import jade.core.ContainerID;
 import jade.core.behaviours.CyclicBehaviour;
 import jade.domain.AMSService;
+import jade.domain.FIPANames;
 import jade.domain.FIPAAgentManagement.AMSAgentDescription;
 import jade.domain.FIPAAgentManagement.SearchConstraints;
+import jade.domain.JADEAgentManagement.CreateAgent;
+import jade.domain.JADEAgentManagement.JADEManagementOntology;
 import jade.gui.GuiAgent;
 import jade.gui.GuiEvent;
 import jade.lang.acl.ACLMessage;
+import jade.proto.AchieveREInitiator;
 
 public class Monitor extends GuiAgent {
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = 1L;
+	transient protected MonitorOverview overview;
 	transient protected MonitorGUI gui;
 
 	// These constants are used by the Gui to post Events to the Agent
@@ -40,13 +48,14 @@ public class Monitor extends GuiAgent {
 	
 	public List<String[]> elementsToDraw = new ArrayList<>();
 	public List<String> elementsDrawn = new ArrayList<>();
+	public List<String> stations = new ArrayList<>();
 
 	public void setup() {
 		// creates and shows the GUI
+		overview = new MonitorOverview(this);
 		gui = new MonitorGUI(this);
 		
 		addBehaviour(new ReceiveBehaviour(this));
-		
 		addBehaviour(new CyclicBehaviour(this) 
 		{
 			private static final long serialVersionUID = 1L;
@@ -55,7 +64,7 @@ public class Monitor extends GuiAgent {
         		broadCastLocation();
         		
 				try {
-					Thread.sleep(200);
+					Thread.sleep(100);
 				} catch (Exception e) {
 					System.out.println("Problem sleeping: " + e);
 					e.printStackTrace();
@@ -132,7 +141,7 @@ public class Monitor extends GuiAgent {
 	
 	void refreshGUI() {
 		if (elementsToDraw.size() > 0) {
-			gui.clearOverview();
+			overview.clearOverview();
 			
 			for (int x = 0; x < elementsToDraw.size(); x++) {
 				String[] message = elementsToDraw.get(x)[1].split(":");
@@ -154,7 +163,7 @@ public class Monitor extends GuiAgent {
 							color = new Color(190, 0, 0);
 						}
 						
-						gui.addCar(locx, locy, desx, desy, color, message[0]);
+						overview.addCar(locx, locy, desx, desy, color, message[0]);
 					}
 		
 					if (message[0].startsWith("STATION")) {
@@ -164,17 +173,131 @@ public class Monitor extends GuiAgent {
 						int locx = Integer.parseInt(loc[0]);
 						int locy = Integer.parseInt(loc[1]);
 						
-						gui.addStation(locx, locy, Color.BLACK, stationID);
+						overview.addStation(locx, locy, Color.BLACK, stationID);
 					}
 					elementsDrawn.add(elementsToDraw.get(x)[0]);
 				}
 			}
 			
-			gui.redraw();
+			overview.redraw();
 			
 			elementsToDraw.clear();
 			elementsDrawn.clear();
 		}
+		
+		List<String> newStations = new ArrayList<>();
+		AID[] agents = getAgents();
+		for (int x = 0; x < agents.length; x++) {
+			if (agents[x].getLocalName().startsWith("STATION_"))
+				newStations.add(agents[x].getLocalName());
+		}
+		if (newStations.size() != stations.size()) {
+			stations = newStations;
+			gui.refreshStations(stations.toArray(new String[stations.size()]));
+		}
+			
+	}
+	
+	void createStation(String name, int posX, int posY) {
+		//Create new station
+		CreateAgent ca = new CreateAgent();
+
+		ca.addArguments(posX + ";" + posY);
+		ca.setAgentName(name);
+		ca.setClassName(Station.class.getName());
+		ca.setContainer(new ContainerID("Main-Container", null));
+		
+		Action actExpr = new Action(getAMS(), ca);
+		ACLMessage request = new ACLMessage(ACLMessage.REQUEST);
+		request.addReceiver(getAMS());
+		request.setOntology(JADEManagementOntology.getInstance().getName());
+
+		getContentManager().registerLanguage(new SLCodec(),
+				FIPANames.ContentLanguage.FIPA_SL);
+
+		getContentManager().registerOntology(
+				JADEManagementOntology.getInstance());
+
+		request.setLanguage(FIPANames.ContentLanguage.FIPA_SL);
+		request.setProtocol(FIPANames.InteractionProtocol.FIPA_REQUEST);
+		try {
+			getContentManager().fillContent(request, actExpr);
+			addBehaviour(new AchieveREInitiator(this, request) {
+				protected void handleInform(ACLMessage inform) {
+					System.out.println("Agent successfully created");
+				}
+
+				protected void handleFailure(ACLMessage failure) {
+					System.out.println("Error creating agent.");
+				}
+			});
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+	public void createSimulatorAgent() {
+		CreateAgent ca = new CreateAgent();
+
+		ca.setAgentName("DUMMY");
+		ca.setClassName(Dummy.class.getName());
+		ca.setContainer(new ContainerID("Main-Container", null));
+		
+		Action actExpr = new Action(getAMS(), ca);
+		ACLMessage request = new ACLMessage(ACLMessage.REQUEST);
+		request.addReceiver(getAMS());
+		request.setOntology(JADEManagementOntology.getInstance().getName());
+
+		getContentManager().registerLanguage(new SLCodec(),
+				FIPANames.ContentLanguage.FIPA_SL);
+
+		getContentManager().registerOntology(
+				JADEManagementOntology.getInstance());
+
+		request.setLanguage(FIPANames.ContentLanguage.FIPA_SL);
+		request.setProtocol(FIPANames.InteractionProtocol.FIPA_REQUEST);
+		try {
+			getContentManager().fillContent(request, actExpr);
+			addBehaviour(new AchieveREInitiator(this, request) {
+				protected void handleInform(ACLMessage inform) {
+					System.out.println("Agent successfully created");
+				}
+
+				protected void handleFailure(ACLMessage failure) {
+					System.out.println("Error creating agent.");
+				}
+			});
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+	public void addRequest(String goFrom, String goTo) {
+		ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
+		msg.setContent("ADDREQUEST:" + goTo);
+		
+		AID[] agents = getAgents();
+
+		//Sending request
+		for (int i=0; i<agents.length;i++)
+			if(agents[i].getLocalName().equals(goFrom))
+				msg.addReceiver(agents[i]); 
+
+		send(msg);
+	}
+
+	public void setCrowdness(int crowdness) {
+		ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
+		msg.setContent("SETCROWDNESS:" + crowdness);
+		
+		AID[] agents = getAgents();
+
+		//Sending request
+		for (int i=0; i<agents.length;i++)
+			if(agents[i].getLocalName().equals("DUMMY"))
+				msg.addReceiver(agents[i]); 
+
+		send(msg);
 	}
 
 	// AGENT OPERATIONS FOLLOWING GUI EVENTS
@@ -211,9 +334,6 @@ public class Monitor extends GuiAgent {
 				ACLMessage msg = receive();
 				
 				if (msg != null) {
-					System.out.println(" - " + myAgent.getLocalName()
-							+ " received: " + msg.getContent() + " from: " + msg.getSender().getLocalName());
-	
 					if (msg.getSender().getLocalName().startsWith("CAR_")) {
 						if (msg.getContent().startsWith("LOCDES:")) {
 							elementsToDraw.add(new String[] {msg.getSender().getLocalName(), msg.getSender().getLocalName() + ":" + msg.getContent()});

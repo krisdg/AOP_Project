@@ -71,7 +71,7 @@ public class MonitorGUI extends JFrame {
     private javax.swing.JComboBox request_tostation;
     private javax.swing.JButton sim_create;
     private javax.swing.JButton sim_send;
-    private javax.swing.JSlider sim_value;
+    private javax.swing.JSpinner sim_value;
     
     private void initComponents() {
 
@@ -89,10 +89,10 @@ public class MonitorGUI extends JFrame {
         jLabel3 = new javax.swing.JLabel();
         request_fromstation = new javax.swing.JComboBox();
         jPanel3 = new javax.swing.JPanel();
-        sim_value = new javax.swing.JSlider();
         jLabel1 = new javax.swing.JLabel();
         sim_send = new javax.swing.JButton();
         sim_create = new javax.swing.JButton();
+        sim_value = new javax.swing.JSpinner();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
 
@@ -200,7 +200,7 @@ public class MonitorGUI extends JFrame {
 
         jTabbedPane4.addTab("Add request", jPanel2);
 
-        jLabel1.setText("Crowdness:");
+        jLabel1.setText("Request interval in seconds:");
 
         sim_send.setText("Send value to simulator agent");
         sim_send.addActionListener(new java.awt.event.ActionListener() {
@@ -216,6 +216,8 @@ public class MonitorGUI extends JFrame {
             }
         });
 
+        sim_value.setModel(new javax.swing.SpinnerNumberModel(Integer.valueOf(1), Integer.valueOf(1), null, Integer.valueOf(1)));
+
         javax.swing.GroupLayout jPanel3Layout = new javax.swing.GroupLayout(jPanel3);
         jPanel3.setLayout(jPanel3Layout);
         jPanel3Layout.setHorizontalGroup(
@@ -223,13 +225,14 @@ public class MonitorGUI extends JFrame {
             .addGroup(jPanel3Layout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(sim_value, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addGroup(jPanel3Layout.createSequentialGroup()
                         .addComponent(jLabel1)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addComponent(sim_value, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addGap(0, 0, Short.MAX_VALUE))
                     .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel3Layout.createSequentialGroup()
                         .addComponent(sim_create)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 10, Short.MAX_VALUE)
                         .addComponent(sim_send)))
                 .addContainerGap())
         );
@@ -237,14 +240,14 @@ public class MonitorGUI extends JFrame {
             jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel3Layout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(jLabel1)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(sim_value, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel1)
+                    .addComponent(sim_value, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(sim_send)
                     .addComponent(sim_create))
-                .addContainerGap(24, Short.MAX_VALUE))
+                .addContainerGap(47, Short.MAX_VALUE))
         );
 
         jTabbedPane4.addTab("Simulator", jPanel3);
@@ -296,12 +299,12 @@ public class MonitorGUI extends JFrame {
     
     private void sim_createActionPerformed(java.awt.event.ActionEvent evt) {        
     	parentAgent.createSimulatorAgent();
-    	parentAgent.setCrowdness(sim_value.getValue());
+    	parentAgent.setTimeInterval((int)sim_value.getValue());
         sim_create.setEnabled(false);
     }                                          
 
     private void sim_sendActionPerformed(java.awt.event.ActionEvent evt) {
-    	parentAgent.setCrowdness(sim_value.getValue());
+    	parentAgent.setTimeInterval((int)sim_value.getValue());
     }    
 
 	public void refreshStations(String[] stations) {

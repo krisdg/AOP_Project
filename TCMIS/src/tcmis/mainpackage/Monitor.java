@@ -286,9 +286,9 @@ public class Monitor extends GuiAgent {
 		send(msg);
 	}
 
-	public void setCrowdness(int crowdness) {
+	public void setTimeInterval(int crowdness) {
 		ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
-		msg.setContent("SETCROWDNESS:" + crowdness);
+		msg.setContent("SETINTERVAL:" + crowdness);
 		
 		AID[] agents = getAgents();
 

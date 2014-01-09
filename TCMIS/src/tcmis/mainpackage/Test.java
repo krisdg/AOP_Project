@@ -1,7 +1,11 @@
 package tcmis.mainpackage;
 
+import java.util.ArrayList;
 import java.util.Random;
 
+import tcmis.mainpackage.Car.ReceiveBehaviour;
+import tcmis.mainpackage.Car.State;
+import jade.core.AID;
 import jade.core.Agent;
 import jade.core.behaviours.*;
 import jade.domain.AMSService;
@@ -9,12 +13,29 @@ import jade.domain.FIPAAgentManagement.*;
 import jade.lang.acl.*;
 
 public class Test extends Agent {
-	AMSAgentDescription[] stations = null;
+	//AMSAgentDescription[] stations = null;
 	AMSAgentDescription[] agents = null;
+	ArrayList<AID> stations = new ArrayList<>();
+	int interval = 10;
 
 	protected void setup() {
-		// search all available agents.
+		// Create a new communication behaviour for receiving commands		
+		addBehaviour(new CyclicBehaviour(this){
+			public void action() {
+				ACLMessage msg = receive();
+				if (msg != null) {
+					System.out.println(" - " + myAgent.getLocalName()
+							+ " received: " + msg.getContent());
 
+					if (msg.getContent().startsWith("SETINTERVAL:")) {
+						String split[] = msg.getContent().split(":");
+						interval = Integer.parseInt(split[1]);
+					}
+				}
+				block();
+			}
+		});
+		
 		addBehaviour(new CyclicBehaviour(this) {
 			public void action() {
 				// acquire sender ID
@@ -28,22 +49,22 @@ public class Test extends Agent {
 					System.out.println("Problem searching AMS: " + e);
 					e.printStackTrace();
 				}
-
+				stations.clear();
 				for (int i = 0; i < agents.length; i++)
-					if (agents[i].getName().getLocalName().contains("STATION_"))
-						stations[i] = agents[i];
+					if (agents[i].getName().getLocalName().startsWith("STATION"))
+						stations.add(agents[i].getName());
 
 				ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
 
 				/*
 				 * Get a random station, chosen from the known stations.
 				 */
-				msg.setContent("totootje!");// moet nog ff juiste syntax..
-				msg.addReceiver(stations[randStation(stations.length)]
-						.getName());
+				AID randomStation = stations.get(randStation(stations.size()-1));
+				msg.setContent("ADDREQUEST:"+ randomStation.getLocalName());
+				msg.addReceiver(randomStation);
 				send(msg);
 				try {
-					Thread.sleep(5000);
+					Thread.sleep(interval*1000);
 				} catch (Exception e) {
 					System.out.println("Problem sleeping: " + e);
 					e.printStackTrace();
@@ -58,10 +79,10 @@ public class Test extends Agent {
 
 		// Usually this can be a field rather than a method variable
 		Random rand = new Random();
-
+		
 		// nextInt is normally exclusive of the top value,
 		// so add 1 to make it inclusive
-		int randomNum = rand.nextInt((max) + 1);
+		int randomNum = rand.nextInt(max+1);
 
 		return randomNum;
 	}

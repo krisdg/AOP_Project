@@ -294,9 +294,9 @@ public class Monitor extends GuiAgent {
 
 		//Sending request
 		for (int i=0; i<agents.length;i++)
-			if(agents[i].getLocalName().equals("SIMULATOR"))
+			if(agents[i].getLocalName().startsWith("SIMULATOR"))
 				msg.addReceiver(agents[i]); 
-
+		
 		send(msg);
 	}
 

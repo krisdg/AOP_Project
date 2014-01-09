@@ -8,7 +8,7 @@ import jade.domain.AMSService;
 import jade.domain.FIPAAgentManagement.*;
 import jade.lang.acl.*;
 
-public class Dummy extends Agent {
+public class Test extends Agent {
 	AMSAgentDescription[] stations = null;
 	AMSAgentDescription[] agents = null;
 

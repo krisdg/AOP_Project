@@ -239,8 +239,8 @@ public class Monitor extends GuiAgent {
 	public void createSimulatorAgent() {
 		CreateAgent ca = new CreateAgent();
 
-		ca.setAgentName("DUMMY");
-		ca.setClassName(Dummy.class.getName());
+		ca.setAgentName("SIMULATOR");
+		ca.setClassName(Test.class.getName());
 		ca.setContainer(new ContainerID("Main-Container", null));
 		
 		Action actExpr = new Action(getAMS(), ca);
@@ -294,7 +294,7 @@ public class Monitor extends GuiAgent {
 
 		//Sending request
 		for (int i=0; i<agents.length;i++)
-			if(agents[i].getLocalName().equals("DUMMY"))
+			if(agents[i].getLocalName().equals("SIMULATOR"))
 				msg.addReceiver(agents[i]); 
 
 		send(msg);

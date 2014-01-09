@@ -25,7 +25,7 @@ import java.util.Map;
 
 @SuppressWarnings("serial")
 public class Station extends Agent {
-	private int positionX = 50, positionY = 50;
+	private int positionX = 0, positionY = 0;
 	private int destinationX= 0, destinationY=0;
 	private boolean showDebugInfo = true;
 	private List<AID> memento = new ArrayList<AID>();
@@ -37,6 +37,12 @@ public class Station extends Agent {
 		c.setMaxResults(new Long(-1));
 		this.addBehaviour(new RecieveBehavior(this));
 
+		//Set location: (Give arguments: x;y on creation)
+		Object[] args = getArguments();
+		positionX = Integer.parseInt(args[0].toString().split(";")[0]);
+		positionY = Integer.parseInt(args[0].toString().split(";")[1]);
+		
+		System.out.println(positionX + ";" + positionY);
 	}
 
 	/**
@@ -91,8 +97,7 @@ public class Station extends Agent {
 				}
 			}
 		} catch (FIPAException e) {
-			System.out
-					.println("HOUSTON WE HAVE A PROBLEM LOOKING FOR FEDERAL AGENTS.");
+			System.out.println("HOUSTON WE HAVE A PROBLEM LOOKING FOR FEDERAL AGENTS.");
 		}
 	}
 
@@ -151,7 +156,8 @@ public class Station extends Agent {
 		 */
 		private void receiveRequest(ACLMessage msg) {
 			// TODO: get requests and
-			ACLMessage reply = new ACLMessage(ACLMessage.INFORM);
+			ACLMessage reply = msg.createReply();
+			reply.setPerformative(ACLMessage.INFORM);
 
 			switch (requestSelector(msg.getContent())) {
 			case 0:
@@ -169,14 +175,12 @@ public class Station extends Agent {
 				}
 				break;
 			case 1:
-				// reply.setPerformative(ACLMessage.INFORM);
-				reply.setContent("LOCATION:");
-				addRecievers(msg, "MONITOR_");
+				//send location to the monitor agent
+				reply.setContent("LOCATION:" + positionX + ";" + positionY);
 				send(reply);
-				// send(reply);
 				break;
 			case 2:
-				// request locations of Cars
+				//request locations of Cars
 				reply.setContent("LOCATION");
 				addRecievers(reply, "CAR_");
 				if (showDebugInfo) {
@@ -215,6 +219,12 @@ public class Station extends Agent {
 				// reply.setContent(sendCarToDestination(x, y));
 				
 				break;
+			case 4:
+				//Request car and send it to it's destination
+				
+				//TODO
+				//REQUEST CAR
+				//WHEN ARRIVED, SEND CAR TO DESTINATION/PARAMETER0
 			default:
 				System.out.println("Recieved Command not recognized.");
 				break;
@@ -335,7 +345,7 @@ public class Station extends Agent {
 		 */
 		private int requestSelector(String str) {
 			String list[] = { "LOCATION:", "LOCATION", "FAILURE",
-					"ACCOMPLISHED"};
+					"ACCOMPLISHED", "ADDREQUEST"};
 			if (str.contains(":")) {
 				return 0;
 			} else {

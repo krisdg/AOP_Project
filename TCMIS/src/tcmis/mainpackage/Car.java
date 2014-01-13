@@ -14,7 +14,7 @@ import jade.core.behaviours.WakerBehaviour;
 import jade.lang.acl.ACLMessage;
 
 public class Car extends Agent {
-	double currentX = 0, currentY = 0, destinationX=0, destinationY=0;
+	double currentX = 1, currentY = 1, destinationX=1, destinationY=1, destinationX2 = 0, destinationY2 = 0;
 	State carState = State.AVAILABLE;
 	Behaviour gotoBehaviour, goBackBehaviour;
 	ACLMessage saveMessageForReply;
@@ -36,6 +36,26 @@ public class Car extends Agent {
 		addBehaviour(new ReceiveBehaviour(this));
 
 	}
+	
+	public boolean goTo(int x, int y, int nextX, int nextY) {
+		if (carState.equals(State.UNAVAILABLE))
+			return false;
+		
+		destinationX2 = nextX;
+		destinationY2 = nextY;
+		
+		return goTo(x,y);
+	}
+	
+	public void secondGoTo(){
+		if(destinationX2 != 0 || destinationY2 != 0){
+			goTo((int)destinationX2, (int)destinationY2);
+			destinationX2 = 0;
+			destinationY2 = 0;
+			changeState(State.UNAVAILABLE);
+		}
+		
+	}
 
 	/**
 	 * Set the destination
@@ -56,12 +76,12 @@ public class Car extends Agent {
 		destinationY = y;
 		
 		// When the gotoBehaviour is still working, just update the destination and return true (in case the car is on its way to the garage).
-		try {
-			if (!gotoBehaviour.done()) {
-				return true;
-			}
-		} catch (NullPointerException e) {
-		}
+//		try {
+//			if (!gotoBehaviour.done()) {
+//				return true;
+//			}
+//		} catch (NullPointerException e) {
+//		}
 
 		// Add the TickerBehaviour (period 100 milsec)
 		gotoBehaviour = new TickerBehaviour(this, carSpeedInMil) {
@@ -93,6 +113,7 @@ public class Car extends Agent {
 											+ " is arrived in the garage, commits suicide.");
 						myAgent.doDelete();
 					}
+					secondGoTo();
 					stop();
 				}
 			}
@@ -272,7 +293,7 @@ public class Car extends Agent {
 		public void action() {
 			ACLMessage msg = receive();
 			if (msg != null) {
-
+				
 				// Split the message so we can use the variables
 				String split[] = msg.getContent().split("[;:]+");
 
@@ -334,7 +355,9 @@ public class Car extends Agent {
 				case "GOTO":
 
 					if (!goTo(Integer.parseInt(split[1]),
-							Integer.parseInt(split[2]))) {
+							Integer.parseInt(split[2]),
+							Integer.parseInt(split[3]),
+							Integer.parseInt(split[4]))) {
 
 						// Replay an failure
 						ACLMessage replyFailure = msg.createReply();

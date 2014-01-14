@@ -334,13 +334,15 @@ public class Monitor extends GuiAgent {
 				ACLMessage msg = receive();
 				
 				if (msg != null) {
-					if (msg.getSender().getLocalName().startsWith("CAR_")) {
-						if (msg.getContent().startsWith("LOCDES:")) {
+					String content = "" + msg.getContent();
+					
+					if (msg.getSender().getName().startsWith("CAR_")) {
+						if (content.startsWith("LOCDES:")) {
 							elementsToDraw.add(new String[] {msg.getSender().getLocalName(), msg.getSender().getLocalName() + ":" + msg.getContent()});
 						}
 					}
-					if (msg.getSender().getLocalName().startsWith("STATION_")) {
-						if (msg.getContent().startsWith("LOCATION:")) {
+					if (msg.getSender().getName().startsWith("STATION_")) {
+						if (content.startsWith("LOCATION:")) {
 							elementsToDraw.add(new String[] {msg.getSender().getLocalName(), msg.getSender().getLocalName() + ":" + msg.getContent()});
 						}
 					}

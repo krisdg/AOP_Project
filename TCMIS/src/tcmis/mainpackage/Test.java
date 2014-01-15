@@ -7,12 +7,17 @@ import tcmis.mainpackage.Car.State;
 import jade.core.AID;
 import jade.core.Agent;
 import jade.core.behaviours.*;
+import jade.core.management.AgentManagementService;
 import jade.domain.AMSService;
 import jade.domain.FIPAAgentManagement.*;
 import jade.gui.GuiAgent;
 import jade.lang.acl.*;
 
 public class Test extends Agent {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
 	//AMSAgentDescription[] stations = null;
 	AMSAgentDescription[] agents = null;
 	ArrayList<AID> stations = new ArrayList<>();
@@ -39,6 +44,7 @@ public class Test extends Agent {
 					e.printStackTrace();
 				}
 				stations.clear();
+
 				for (int i = 0; i < agents.length; i++)
 					if (agents[i].getName().getLocalName().startsWith("STATION"))
 						stations.add(agents[i].getName());

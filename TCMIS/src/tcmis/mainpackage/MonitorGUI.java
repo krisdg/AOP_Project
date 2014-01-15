@@ -54,6 +54,7 @@ public class MonitorGUI extends JFrame {
         this.setVisible(true);
         
         sim_value.setValue(10);
+        sim_kill.setEnabled(false);
 	}
 	
     private javax.swing.JButton addstation_create;
@@ -73,6 +74,8 @@ public class MonitorGUI extends JFrame {
     private javax.swing.JComboBox request_tostation;
     private javax.swing.JButton sim_create;
     private javax.swing.JSpinner sim_value;
+    private javax.swing.JButton sim_kill;
+    private javax.swing.JButton addstation_createrand;
     
     private void initComponents() {
 
@@ -83,6 +86,7 @@ public class MonitorGUI extends JFrame {
         addstation_x = new javax.swing.JSpinner();
         addstation_y = new javax.swing.JSpinner();
         addstation_create = new javax.swing.JButton();
+        addstation_createrand = new javax.swing.JButton();
         jPanel2 = new javax.swing.JPanel();
         request_perform = new javax.swing.JButton();
         request_tostation = new javax.swing.JComboBox();
@@ -93,6 +97,7 @@ public class MonitorGUI extends JFrame {
         jLabel1 = new javax.swing.JLabel();
         sim_create = new javax.swing.JButton();
         sim_value = new javax.swing.JSpinner();
+        sim_kill = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
 
@@ -111,6 +116,13 @@ public class MonitorGUI extends JFrame {
             }
         });
 
+        addstation_createrand.setText("Create random");
+        addstation_createrand.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                addstation_createrandActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
         jPanel1Layout.setHorizontalGroup(
@@ -126,8 +138,11 @@ public class MonitorGUI extends JFrame {
                         .addComponent(jLabel5)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                         .addComponent(addstation_y, javax.swing.GroupLayout.PREFERRED_SIZE, 77, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addComponent(addstation_create))
-                .addContainerGap(241, Short.MAX_VALUE))
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addComponent(addstation_create)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(addstation_createrand)))
+                .addContainerGap(162, Short.MAX_VALUE))
         );
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -141,7 +156,9 @@ public class MonitorGUI extends JFrame {
                     .addComponent(jLabel5)
                     .addComponent(addstation_y, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addComponent(addstation_create)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(addstation_create)
+                    .addComponent(addstation_createrand))
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
@@ -202,7 +219,7 @@ public class MonitorGUI extends JFrame {
 
         jLabel1.setText("Request interval in seconds:");
 
-        sim_create.setText("Create simulator agent");
+        sim_create.setText("Start");
         sim_create.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 sim_createActionPerformed(evt);
@@ -210,6 +227,13 @@ public class MonitorGUI extends JFrame {
         });
 
         sim_value.setModel(new javax.swing.SpinnerNumberModel(Integer.valueOf(1), Integer.valueOf(1), null, Integer.valueOf(1)));
+
+        sim_kill.setText("Stop");
+        sim_kill.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                sim_killActionPerformed(evt);
+            }
+        });
 
         javax.swing.GroupLayout jPanel3Layout = new javax.swing.GroupLayout(jPanel3);
         jPanel3.setLayout(jPanel3Layout);
@@ -222,7 +246,10 @@ public class MonitorGUI extends JFrame {
                         .addComponent(jLabel1)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                         .addComponent(sim_value, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addComponent(sim_create))
+                    .addGroup(jPanel3Layout.createSequentialGroup()
+                        .addComponent(sim_create)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(sim_kill)))
                 .addContainerGap(161, Short.MAX_VALUE))
         );
         jPanel3Layout.setVerticalGroup(
@@ -233,7 +260,9 @@ public class MonitorGUI extends JFrame {
                     .addComponent(jLabel1)
                     .addComponent(sim_value, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(sim_create)
+                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(sim_create)
+                    .addComponent(sim_kill))
                 .addContainerGap(47, Short.MAX_VALUE))
         );
 
@@ -263,7 +292,40 @@ public class MonitorGUI extends JFrame {
     }                                               
 
     private void addstation_createActionPerformed(java.awt.event.ActionEvent evt) {                                                  
-    	AID[] agents = parentAgent.getAgents();
+    	createStation((int)addstation_x.getValue(), (int)addstation_y.getValue());
+    }
+    
+    private void addstation_createrandActionPerformed(java.awt.event.ActionEvent evt) {                                                      
+    	int posx = 80 + (int)(Math.random() * ((1000 - 80) + 1));
+    	int posy = 20 + (int)(Math.random() * ((500 - 20) + 1));
+    	
+    	createStation(posx, posy);
+    }
+    
+    private void sim_createActionPerformed(java.awt.event.ActionEvent evt) {        
+    	parentAgent.createSimulatorAgent((int)sim_value.getValue());
+        sim_create.setEnabled(false);
+        sim_kill.setEnabled(true);
+    }
+    
+    private void sim_killActionPerformed(java.awt.event.ActionEvent evt) {                                         
+    	parentAgent.killSimulatorAgent();
+        sim_create.setEnabled(true);
+        sim_kill.setEnabled(false);
+    }
+
+	public void refreshStations(String[] stations) {
+		request_fromstation.removeAllItems();
+		request_tostation.removeAllItems();
+		
+		for(int x = 0; x < stations.length; x++) {
+			request_fromstation.addItem(stations[x]);
+			request_tostation.addItem(stations[x]);
+		}
+	}
+	
+	public void createStation(int posx, int posy) {
+		AID[] agents = parentAgent.getAgents();
     	
     	char highestID = '@';
     	
@@ -279,24 +341,9 @@ public class MonitorGUI extends JFrame {
     	
     	highestID++;
     	
-    	parentAgent.createStation("STATION_" + highestID, (int)addstation_x.getValue(), (int)addstation_y.getValue());
+    	parentAgent.createStation("STATION_" + highestID, posx, posy);
     	
     	System.out.println("STATION_" + highestID + " created");
-    }
-    
-    private void sim_createActionPerformed(java.awt.event.ActionEvent evt) {        
-    	parentAgent.createSimulatorAgent((int)sim_value.getValue());
-        sim_create.setEnabled(false);
-    }
-
-	public void refreshStations(String[] stations) {
-		request_fromstation.removeAllItems();
-		request_tostation.removeAllItems();
-		
-		for(int x = 0; x < stations.length; x++) {
-			request_fromstation.addItem(stations[x]);
-			request_tostation.addItem(stations[x]);
-		}
 	}
     
 	@Override

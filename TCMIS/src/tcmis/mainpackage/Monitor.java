@@ -25,6 +25,7 @@ import jade.domain.FIPAAgentManagement.AMSAgentDescription;
 import jade.domain.FIPAAgentManagement.SearchConstraints;
 import jade.domain.JADEAgentManagement.CreateAgent;
 import jade.domain.JADEAgentManagement.JADEManagementOntology;
+import jade.domain.JADEAgentManagement.KillAgent;
 import jade.gui.GuiAgent;
 import jade.gui.GuiEvent;
 import jade.lang.acl.ACLMessage;
@@ -54,11 +55,6 @@ public class Monitor extends GuiAgent {
 		// creates and shows the GUI
 		overview = new MonitorOverview(this);
 		gui = new MonitorGUI(this);
-
-		// Add static stations for simulation
-		createStation("STATION_A", 800, 300);
-		createStation("STATION_B", 100, 200);
-		createStation("STATION_C", 400, 100);
 
 		addBehaviour(new ReceiveBehaviour(this));
 		addBehaviour(new CyclicBehaviour(this) {
@@ -132,7 +128,8 @@ public class Monitor extends GuiAgent {
 				AID agentID = AMSAgents[i].getName();
 
 				if (agentID.getName().startsWith("CAR_")
-						|| agentID.getName().startsWith("STATION_")) {
+						|| agentID.getName().startsWith("STATION_")
+						|| agentID.getName().startsWith("SIMULATOR")) {
 					agents.add(agentID);
 				}
 			}
@@ -246,12 +243,57 @@ public class Monitor extends GuiAgent {
 	public void createSimulatorAgent(int interval) {
 		CreateAgent ca = new CreateAgent();
 
-		ca.setAgentName("SIMULATOR");
 		ca.addArguments(interval);
+		ca.setAgentName("SIMULATOR");
 		ca.setClassName(Test.class.getName());
 		ca.setContainer(new ContainerID("Main-Container", null));
 
 		Action actExpr = new Action(getAMS(), ca);
+		ACLMessage request = new ACLMessage(ACLMessage.REQUEST);
+		request.addReceiver(getAMS());
+		request.setOntology(JADEManagementOntology.getInstance().getName());
+
+		getContentManager().registerLanguage(new SLCodec(),
+				FIPANames.ContentLanguage.FIPA_SL);
+
+		getContentManager().registerOntology(
+				JADEManagementOntology.getInstance());
+
+		request.setLanguage(FIPANames.ContentLanguage.FIPA_SL);
+		request.setProtocol(FIPANames.InteractionProtocol.FIPA_REQUEST);
+		try {
+			getContentManager().fillContent(request, actExpr);
+			addBehaviour(new AchieveREInitiator(this, request) {
+				protected void handleInform(ACLMessage inform) {
+					System.out.println("Agent successfully created");
+				}
+
+				protected void handleFailure(ACLMessage failure) {
+					System.out.println("Error creating agent.");
+				}
+			});
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+	void killSimulatorAgent() {
+		AID agentToKill = null;
+		
+		AID[] agents = getAgents();
+
+		// Broadcast to all cars and stations.
+		for (int i = 0; i < agents.length; i++) {
+			if (agents[i].getName().startsWith("SIMULATOR")) {
+				agentToKill = agents[i];
+			}
+		}
+		
+		KillAgent serialkiller = new KillAgent();
+
+		serialkiller.setAgent(agentToKill);
+
+		Action actExpr = new Action(getAMS(), serialkiller);
 		ACLMessage request = new ACLMessage(ACLMessage.REQUEST);
 		request.addReceiver(getAMS());
 		request.setOntology(JADEManagementOntology.getInstance().getName());

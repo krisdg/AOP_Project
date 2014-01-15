@@ -252,7 +252,6 @@ public class Station extends Agent {
 				ACLMessage msg1 = new ACLMessage(ACLMessage.INFORM);
 				msg1.setContent("ADDEDREQUEST");
 				for (int i = 0; i < agents.length; i++) {
-					System.out.println(agents[i].getClass().getName().toLowerCase());
 					if (agents[i].getName().startsWith("MONITOR")) {
 						msg1.addReceiver(agents[i]);
 						send(msg1);

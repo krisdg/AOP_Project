@@ -25,6 +25,7 @@ public class Car extends Agent {
 	int backToGarageTime = 120000; //The time until the car goes back to the garage
 	//</Settings>
 	
+	long waitTime = 0;
 	
 	public enum State {
 		AVAILABLE, UNAVAILABLE
@@ -123,8 +124,11 @@ public class Car extends Agent {
 											+ " is arrived in the garage, commits suicide.");
 						myAgent.doDelete();
 					}
-					secondGoTo();
-					stop();
+
+					if (System.currentTimeMillis() >= waitTime) {
+						secondGoTo();
+						stop();
+					}
 				}
 			}
 		};
@@ -251,6 +255,8 @@ public class Car extends Agent {
 
 		if (currentX == destinationX && currentY == destinationY)
 			return true;
+		
+		waitTime = System.currentTimeMillis() + 5000;
 
 		return false;
 	}

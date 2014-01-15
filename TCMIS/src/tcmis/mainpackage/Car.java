@@ -196,10 +196,10 @@ public class Car extends Agent {
 	private boolean updateLocation() {
 		resetGoBackBehaviour();
 
-		double diffx = 0, diffy = 0;
+		int diffx = 0, diffy = 0;
 
-		diffx = currentX - destinationX;
-		diffy = currentY - destinationY;
+		diffx = (int)currentX - (int)destinationX;
+		diffy = (int)currentY - (int)destinationY;
 
 		if (diffx != 0 && diffy != 0) {
 
@@ -253,7 +253,7 @@ public class Car extends Agent {
 		// Show car in an field (test purposes)
 		// showRaster();
 
-		if (currentX == destinationX && currentY == destinationY)
+		if ((int)currentX == (int)destinationX && (int)currentY == (int)destinationY)
 			return true;
 		
 		waitTime = System.currentTimeMillis() + 5000;

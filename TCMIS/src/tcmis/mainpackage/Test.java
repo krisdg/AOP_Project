@@ -3,8 +3,6 @@ package tcmis.mainpackage;
 import java.util.ArrayList;
 import java.util.Random;
 
-import tcmis.mainpackage.Car.ReceiveBehaviour;
-import tcmis.mainpackage.Car.State;
 import jade.core.AID;
 import jade.core.Agent;
 import jade.core.behaviours.*;

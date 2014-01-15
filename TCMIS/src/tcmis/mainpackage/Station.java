@@ -187,6 +187,10 @@ public class Station extends Agent {
 					destinationY = Integer.parseInt(str[1]);
 					System.out.println("Destination" + destinationX + " "
 							+ destinationY);
+					if(getTotalRecievers("CAR_")==0){
+						createCar();
+					}
+					
 				} else {
 
 					addAvailableCars(msg);
@@ -226,15 +230,7 @@ public class Station extends Agent {
 				break;
 			case 4:
 				// ADDREQUEST
-				if(getTotalRecievers("CAR_")==0){
-					createCar();
-					try {
-						Thread.sleep(1000);
-					} catch (InterruptedException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
-				}
+
 				// request locations of Cars
 				String[] request = msg.getContent().split("[;:]+");
 
@@ -340,10 +336,10 @@ public class Station extends Agent {
 			} else {
 				createCar();
 
-				ACLMessage reply = new ACLMessage(ACLMessage.INFORM);
-				reply.setContent("LOCATION");
-				addRecievers(reply, "CAR_");
-				send(reply);
+//				ACLMessage reply = new ACLMessage(ACLMessage.INFORM);
+//				reply.setContent("LOCATION");
+//				addRecievers(reply, "CAR_");
+//				send(reply);
 			}
 
 			for (; it.hasNext();) {
@@ -400,7 +396,7 @@ public class Station extends Agent {
 		CreateAgent ca = new CreateAgent();
 
 		ca.setAgentName("CAR_" + (getTotalRecievers("CAR") + 1));
-
+		ca.addArguments(positionX+";"+positionY+";"+destinationX+";"+destinationY);
 		ca.setClassName(Car.class.getName());
 		ca.setContainer(new ContainerID("Main-Container", null));
 		Action actExpr = new Action(getAMS(), ca);

@@ -169,11 +169,17 @@ public class Car extends Agent {
 
 					if (!goTo(0, 0))
 						this.reset();
+					else
+						killGoBackBehaviour();
 				}
 			};
 			addBehaviour(goBackBehaviour);
 		}
 
+	}
+	
+	void killGoBackBehaviour() {
+		goBackBehaviour = null;
 	}
 
 	/**
@@ -202,8 +208,7 @@ public class Car extends Agent {
 	 * @return true if arrived at destination
 	 */
 	private boolean updateLocation() {
-		resetGoBackBehaviour();
-
+		
 		double diffx = 0, diffy = 0;
 
 		diffx = currentX - destinationX;
@@ -268,10 +273,9 @@ public class Car extends Agent {
 		if (currentX == destinationX && currentY == destinationY)
 			return true;
 		
-		
-		
 		waitTime = System.currentTimeMillis() + 5000;
-
+		resetGoBackBehaviour();
+		
 		return false;
 	}
 

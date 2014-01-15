@@ -35,8 +35,7 @@ public class Station extends Agent {
 	private int positionX = 0, positionY = 0;
 	private int destinationX = 0, destinationY = 0;
 	private boolean showDebugInfo = true;
-	private List<AID> memento = new ArrayList<AID>();
-	private int spawned = 0;
+	// private List<AID> memento = new ArrayList<AID>();
 
 	// private String rememberAgent;
 	private SearchConstraints c = new SearchConstraints();
@@ -49,8 +48,10 @@ public class Station extends Agent {
 		Object[] args = getArguments();
 		positionX = Integer.parseInt(args[0].toString().split(";")[0]);
 		positionY = Integer.parseInt(args[0].toString().split(";")[1]);
+		
+		
 
-		createCar();
+//		createCar();
 	}
 
 	/**
@@ -170,11 +171,14 @@ public class Station extends Agent {
 			ACLMessage reply = msg.createReply();
 			reply.setPerformative(ACLMessage.INFORM);
 
-			switch (requestSelector(msg.getContent())) {
+			String content = "" + msg.getContent();
+
+			System.out.println("received content: " + this.getAgent().getName()
+					+ " : " + content);
+
+			switch (requestSelector(content)) {
 			case 0:
 				// LOCATION:
-
-				// determine the car closest to the station.
 				if (msg.getSender().getName().contains("STATION_")) {
 					System.out.println(msg.getSender().getName());
 					String str[] = msg.getContent().replace("LOCATION:", "")
@@ -199,10 +203,8 @@ public class Station extends Agent {
 				break;
 			case 1:
 				// LOCATION
-
 				// send location to the monitor agent
 				reply.setContent("LOCATION:" + positionX + ";" + positionY);
-				// System.out.println(reply.getContent());
 				send(reply);
 				break;
 			case 2:
@@ -217,27 +219,6 @@ public class Station extends Agent {
 			case 3:
 				// ACCOMPLISHED
 
-				// try {
-				// Thread.sleep(100);
-				// if (!memento.contains(msg.getSender())) {
-				// ACLMessage destination = msg.createReply();
-				// destination.setPerformative(ACLMessage.INFORM);
-				// destination.setContent(sendGoto(destinationX,
-				// destinationY));
-				// memento.add(msg.getSender());
-				// if (showDebugInfo) {
-				// System.out.println(myAgent.getName()
-				// + " reply \"ACCOMPLISHED\":"
-				// + destination.getContent());
-				// }
-				// send(destination);
-				// } else {
-				// memento.remove(msg.getSender());
-				// }
-				//
-				// } catch (InterruptedException e) {
-				// e.printStackTrace();
-				// }
 				// TODO: send car to his destination
 				// reply.setPerformative(ACLMessage.INFORM);
 				// reply.setContent(sendCarToDestination(x, y));
@@ -245,34 +226,24 @@ public class Station extends Agent {
 				break;
 			case 4:
 				// ADDREQUEST
-
-				// Request car and send it to it's destination
-				// String str[] = msg.getContent().split(":");
-				// ACLMessage getDestination = new
-				// ACLMessage(ACLMessage.INFORM);//msg.createReply();
-				// getDestination.setPerformative(ACLMessage.INFORM);
-				// getDestination.setContent("LOCATION");
-				// addRecievers(getDestination, str[1]);
-				// System.out.println(getDestination.getContent());
-				// getDestination.removeReceiver(msg.getSender());
-				// send(getDestination);
-
-				// ACLMessage setDestination = new
-				// ACLMessage(ACLMessage.INFORM);
-				// setDestination.setContent(sendGoto(positionX, positionY));
-				// //AID aid=
-				// createCar();
-				// // System.out.println(aid.getName());
-				// // addRecievers(setDestination, aid.getName());
-				// send(setDestination);
-
+				if(getTotalRecievers("CAR_")==0){
+					createCar();
+					try {
+						Thread.sleep(1000);
+					} catch (InterruptedException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+				}
 				// request locations of Cars
 				String[] request = msg.getContent().split("[;:]+");
 
 				String station = request[1];
-				ACLMessage sendStation = msg.createReply();
-				addRecievers(sendStation, station);
-				send(sendStation);
+			    ACLMessage sendStation = new ACLMessage(ACLMessage.INFORM);
+			    sendStation.setContent("LOCATION");
+			    
+			    addRecievers(sendStation, station);
+			    send(sendStation);
 
 				reply.setContent("LOCATION");
 				addRecievers(reply, "CAR_");
@@ -281,7 +252,7 @@ public class Station extends Agent {
 				break;
 			default:
 				System.out.println("Recieved Command not recognized.");
-				System.out.println(msg.getContent());
+				System.out.println(content);
 				break;
 			}
 		}
@@ -369,8 +340,7 @@ public class Station extends Agent {
 			} else {
 				createCar();
 
-				ACLMessage reply = new ACLMessage();
-				reply.setPerformative(ACLMessage.INFORM);
+				ACLMessage reply = new ACLMessage(ACLMessage.INFORM);
 				reply.setContent("LOCATION");
 				addRecievers(reply, "CAR_");
 				send(reply);
@@ -380,7 +350,6 @@ public class Station extends Agent {
 				double value = it.next();
 				if (value != closestCarKey && carList.get(value) != null) {
 					rejectedReply.addReceiver(carList.get(value));
-
 				}
 			}
 			rejectedReply.setContent("REJECTED");
@@ -411,28 +380,24 @@ public class Station extends Agent {
 			try {
 				String list[] = { "LOCATION:", "LOCATION", "FAILURE",
 						"ACCOMPLISHED", "ADDREQUEST" };
-				// if (str.startsWith(":")) {
-				// return 0;
-				// } else {
 				for (int i = 0; i < list.length; i++) {
 					if (str.startsWith(list[i])) {
 						return i;
 					}
 				}
-				// }
 				return -1;
 			} catch (NullPointerException e) {
 				e.printStackTrace();
 				return -1;
 			}
 		}
-
 	}
 
+	/**
+	 * create a car
+	 */
 	private void createCar() {
 		CreateAgent ca = new CreateAgent();
-		// String name = "CAR_spwnd" + this.getName().replace("STATION_", "")
-		// + this.spawned;
 
 		ca.setAgentName("CAR_" + (getTotalRecievers("CAR") + 1));
 

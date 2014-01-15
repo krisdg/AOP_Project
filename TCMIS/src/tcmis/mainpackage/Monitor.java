@@ -45,7 +45,7 @@ public class Monitor extends GuiAgent {
 	public static final int CONTINUE_EVENT = 1003;
 	public static final int REFRESH_EVENT = 1004;
 	public static final int CLONE_EVENT = 1005;
-	
+
 	public List<String[]> elementsToDraw = new ArrayList<>();
 	public List<String> elementsDrawn = new ArrayList<>();
 	public List<String> stations = new ArrayList<>();
@@ -54,17 +54,21 @@ public class Monitor extends GuiAgent {
 		// creates and shows the GUI
 		overview = new MonitorOverview(this);
 		gui = new MonitorGUI(this);
-		
+
+		// Add static stations for simulation
+		createStation("STATION_A", 800, 300);
+		createStation("STATION_B", 100, 200);
+		createStation("STATION_C", 400, 100);
+
 		addBehaviour(new ReceiveBehaviour(this));
-		addBehaviour(new CyclicBehaviour(this) 
-		{
+		addBehaviour(new CyclicBehaviour(this) {
 			private static final long serialVersionUID = 1L;
 
 			public void action() {
-        		broadCastLocation();
-        		
+				broadCastLocation();
+
 				try {
-					Thread.sleep(100);
+					Thread.sleep(200);
 				} catch (Exception e) {
 					System.out.println("Problem sleeping: " + e);
 					e.printStackTrace();
@@ -73,38 +77,38 @@ public class Monitor extends GuiAgent {
 			}
 		});
 	}
-	
+
 	public void broadCastLocation() {
 		refreshGUI();
-		
+
 		AID[] agents = getAgents();
-		
-		//Ask all cars and stations for their location
+
+		// Ask all cars and stations for their location
 		ACLMessage msg1 = new ACLMessage(ACLMessage.INFORM);
 		msg1.setContent("LOCATION");
-		
+
 		int receivers = 0;
-		
-		//Broadcast to all cars and stations.
-		for (int i=0; i<agents.length;i++) {
-			if(agents[i].getLocalName().startsWith("STATION_")) {
-				msg1.addReceiver(agents[i]); 
+
+		// Broadcast to all cars and stations.
+		for (int i = 0; i < agents.length; i++) {
+			if (agents[i].getLocalName().startsWith("STATION_")) {
+				msg1.addReceiver(agents[i]);
 				receivers++;
 			}
 		}
-		
+
 		if (receivers > 0)
 			send(msg1);
-		
+
 		receivers = 0;
-		
-		//Ask all cars for their destination
+
+		// Ask all cars for their destination
 		ACLMessage msg2 = new ACLMessage(ACLMessage.INFORM);
 		msg2.setContent("LOCDES");
 
-		//Broadcast to all cars and stations.
-		for (int i=0; i<agents.length;i++) {
-			if(agents[i].getLocalName().startsWith("CAR_")) {
+		// Broadcast to all cars and stations.
+		for (int i = 0; i < agents.length; i++) {
+			if (agents[i].getLocalName().startsWith("CAR_")) {
 				msg2.addReceiver(agents[i]);
 				receivers++;
 			}
@@ -112,7 +116,7 @@ public class Monitor extends GuiAgent {
 
 		if (receivers > 0)
 			send(msg2);
-			
+
 	}
 
 	public AID[] getAgents() {
@@ -122,12 +126,13 @@ public class Monitor extends GuiAgent {
 			SearchConstraints c = new SearchConstraints();
 			c.setMaxResults(new Long(-1));
 			AMSAgents = AMSService.search(this, new AMSAgentDescription(), c);
-			
+
 			AID myID = getAID();
 			for (int i = 0; i < AMSAgents.length; i++) {
 				AID agentID = AMSAgents[i].getName();
 
-				if (agentID.getName().startsWith("CAR_") || agentID.getName().startsWith("STATION_")) {
+				if (agentID.getName().startsWith("CAR_")
+						|| agentID.getName().startsWith("STATION_")) {
 					agents.add(agentID);
 				}
 			}
@@ -138,53 +143,55 @@ public class Monitor extends GuiAgent {
 
 		return agents.toArray(new AID[agents.size()]);
 	}
-	
+
 	void refreshGUI() {
 		if (elementsToDraw.size() > 0) {
 			overview.clearOverview();
-			
+
 			for (int x = 0; x < elementsToDraw.size(); x++) {
 				String[] message = elementsToDraw.get(x)[1].split(":");
-				
+
 				if (elementsDrawn.contains(elementsToDraw.get(x)[0]) == false) {
 					if (message[0].startsWith("CAR")) {
 						String[] locdes = message[2].split(";");
-						
+
 						int locx = Integer.parseInt(locdes[0]);
 						int locy = Integer.parseInt(locdes[1]);
 						int desx = Integer.parseInt(locdes[2]);
 						int desy = Integer.parseInt(locdes[3]);
-						
+
 						Color color;
-						
+
 						if (message[3].equals("AVAILABLE")) {
 							color = new Color(0, 190, 0);
 						} else {
 							color = new Color(190, 0, 0);
 						}
-						
-						overview.addCar(locx, locy, desx, desy, color, message[0]);
+
+						overview.addCar(locx, locy, desx, desy, color,
+								message[0]);
 					}
-		
+
 					if (message[0].startsWith("STATION")) {
-						String stationID = message[0].replaceAll("STATION_", "");
+						String stationID = message[0]
+								.replaceAll("STATION_", "");
 						String[] loc = message[2].split(";");
-						
+
 						int locx = Integer.parseInt(loc[0]);
 						int locy = Integer.parseInt(loc[1]);
-						
+
 						overview.addStation(locx, locy, Color.BLACK, stationID);
 					}
 					elementsDrawn.add(elementsToDraw.get(x)[0]);
 				}
 			}
-			
+
 			overview.redraw();
-			
+
 			elementsToDraw.clear();
 			elementsDrawn.clear();
 		}
-		
+
 		List<String> newStations = new ArrayList<>();
 		AID[] agents = getAgents();
 		for (int x = 0; x < agents.length; x++) {
@@ -195,18 +202,18 @@ public class Monitor extends GuiAgent {
 			stations = newStations;
 			gui.refreshStations(stations.toArray(new String[stations.size()]));
 		}
-			
+
 	}
-	
+
 	void createStation(String name, int posX, int posY) {
-		//Create new station
+		// Create new station
 		CreateAgent ca = new CreateAgent();
 
 		ca.addArguments(posX + ";" + posY);
 		ca.setAgentName(name);
 		ca.setClassName(Station.class.getName());
 		ca.setContainer(new ContainerID("Main-Container", null));
-		
+
 		Action actExpr = new Action(getAMS(), ca);
 		ACLMessage request = new ACLMessage(ACLMessage.REQUEST);
 		request.addReceiver(getAMS());
@@ -242,7 +249,7 @@ public class Monitor extends GuiAgent {
 		ca.setAgentName("SIMULATOR");
 		ca.setClassName(Test.class.getName());
 		ca.setContainer(new ContainerID("Main-Container", null));
-		
+
 		Action actExpr = new Action(getAMS(), ca);
 		ACLMessage request = new ACLMessage(ACLMessage.REQUEST);
 		request.addReceiver(getAMS());
@@ -275,13 +282,13 @@ public class Monitor extends GuiAgent {
 	public void addRequest(String goFrom, String goTo) {
 		ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
 		msg.setContent("ADDREQUEST:" + goTo);
-		
+
 		AID[] agents = getAgents();
 
-		//Sending request
-		for (int i=0; i<agents.length;i++)
-			if(agents[i].getLocalName().equals(goFrom))
-				msg.addReceiver(agents[i]); 
+		// Sending request
+		for (int i = 0; i < agents.length; i++)
+			if (agents[i].getLocalName().equals(goFrom))
+				msg.addReceiver(agents[i]);
 
 		send(msg);
 	}
@@ -289,14 +296,14 @@ public class Monitor extends GuiAgent {
 	public void setTimeInterval(int crowdness) {
 		ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
 		msg.setContent("SETINTERVAL:" + crowdness);
-		
+
 		AID[] agents = getAgents();
 
-		//Sending request
-		for (int i=0; i<agents.length;i++)
-			if(agents[i].getLocalName().startsWith("SIMULATOR"))
-				msg.addReceiver(agents[i]); 
-		
+		// Sending request
+		for (int i = 0; i < agents.length; i++)
+			if (agents[i].getLocalName().startsWith("SIMULATOR"))
+				msg.addReceiver(agents[i]);
+
 		send(msg);
 	}
 
@@ -317,7 +324,7 @@ public class Monitor extends GuiAgent {
 			break;
 		}
 	}
-	
+
 	class ReceiveBehaviour extends CyclicBehaviour {
 
 		/**
@@ -330,27 +337,33 @@ public class Monitor extends GuiAgent {
 		}
 
 		public void action() {
-			while(true) {
+			while (true) {
 				ACLMessage msg = receive();
-				
+
 				if (msg != null) {
 					String content = "" + msg.getContent();
-					
+
 					if (msg.getSender().getName().startsWith("CAR_")) {
 						if (content.startsWith("LOCDES:")) {
-							elementsToDraw.add(new String[] {msg.getSender().getLocalName(), msg.getSender().getLocalName() + ":" + msg.getContent()});
+							elementsToDraw.add(new String[] {
+									msg.getSender().getLocalName(),
+									msg.getSender().getLocalName() + ":"
+											+ msg.getContent() });
 						}
 					}
 					if (msg.getSender().getName().startsWith("STATION_")) {
 						if (content.startsWith("LOCATION:")) {
-							elementsToDraw.add(new String[] {msg.getSender().getLocalName(), msg.getSender().getLocalName() + ":" + msg.getContent()});
+							elementsToDraw.add(new String[] {
+									msg.getSender().getLocalName(),
+									msg.getSender().getLocalName() + ":"
+											+ msg.getContent() });
 						}
 					}
 				} else {
 					break;
 				}
 			}
-			
+
 			block();
 		}
 	}

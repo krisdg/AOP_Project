@@ -59,9 +59,19 @@ public class Test extends Agent {
 				/*
 				 * Get a random station, chosen from the known stations.
 				 */
-				AID randomStation = stations.get(randStation(stations.size()-1));
-				msg.setContent("ADDREQUEST:"+ randomStation.getLocalName());
-				msg.addReceiver(randomStation);
+				AID startStation = stations.get(randStation(stations.size()-1));
+				AID destinationStation = stations.get(randStation(stations.size()-1));
+				
+				do{
+					startStation = stations.get(randStation(stations.size()-1));
+					destinationStation = stations.get(randStation(stations.size()-1));
+				}
+				while(startStation.getLocalName().equals(destinationStation.getLocalName()));
+				
+					
+				msg.setContent("ADDREQUEST:"+ destinationStation.getLocalName());
+				
+				msg.addReceiver(startStation);
 				send(msg);
 				try {
 					Thread.sleep(interval*1000);

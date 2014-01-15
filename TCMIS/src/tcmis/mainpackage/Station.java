@@ -457,8 +457,12 @@ public class Station extends Agent {
 			else
 				for (int i = 0; i < cars.size(); i++)
 					for (int j = 0; j <= cars.size(); j++)
-						if (cars.get(i).equals(nameAgent + j))
+						if (cars.get(i).equals(nameAgent + j)){
 							availableCarNumber = i + 1;
+						}else{
+							availableCarNumber = j;
+						}
+						
 
 			nameAgent = nameAgent + availableCarNumber;
 			return nameAgent;

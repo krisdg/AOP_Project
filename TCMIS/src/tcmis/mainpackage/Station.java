@@ -445,6 +445,8 @@ public class Station extends Agent {
 			System.out.println("Problem searching AMS: " + e);
 			e.printStackTrace();
 		}
+		
+		
 
 		for (int i = 0; i < agents.length; i++)
 			if (agents[i].getName().getLocalName().contains(nameAgent))
@@ -455,7 +457,7 @@ public class Station extends Agent {
 		else
 			for (int i = 0; i < cars.size(); i++) {
 				for (int j = 0; j <= cars.size(); j++) {
-					if (cars.get(i).equals(nameAgent + j)) {
+					if (cars.get(j).equals(nameAgent + i)) {
 						// availableCarNumber = i + 1;
 						break;
 					}

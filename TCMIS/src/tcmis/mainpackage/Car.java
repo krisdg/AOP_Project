@@ -23,7 +23,7 @@ public class Car extends Agent {
 	// <Settings>
 	boolean showDebugInfo = false;
 	int carSpeedInMil = 100; // The update time in milliseconds
-	int backToGarageTime = 10000; // The time until the car goes back to the
+	int backToGarageTime = 120000; // The time until the car goes back to the
 									// garage
 	// </Settings>
 
@@ -99,12 +99,13 @@ public class Car extends Agent {
 
 		// When the gotoBehaviour is still working, just update the destination
 		// and return true (in case the car is on its way to the garage).
-		// try {
-		// if (!gotoBehaviour.done()) {
-		// return true;
-		// }
-		// } catch (NullPointerException e) {
-		// }
+		 try {
+		 if (!gotoBehaviour.done()) {
+			 changeState(State.UNAVAILABLE);
+			 return true;
+		 }
+		 } catch (NullPointerException e) {
+		 }
 
 		// Add the TickerBehaviour (period 100 milsec)
 		gotoBehaviour = new TickerBehaviour(this, carSpeedInMil) {

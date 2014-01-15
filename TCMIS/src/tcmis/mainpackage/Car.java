@@ -39,9 +39,11 @@ public class Car extends Agent {
 			
 			if (positions.length == 2) {
 				goTo(Integer.parseInt(positions[0]), Integer.parseInt(positions[1]));
+				changeState(State.UNAVAILABLE);
 			}
 			if (positions.length == 4) {
 				goTo(Integer.parseInt(positions[0]), Integer.parseInt(positions[1]), Integer.parseInt(positions[2]), Integer.parseInt(positions[3]));
+				changeState(State.UNAVAILABLE);
 			}
 		}
 		
@@ -62,6 +64,14 @@ public class Car extends Agent {
 	
 	public void secondGoTo(){
 		if(destinationX2 != 0 || destinationY2 != 0){
+			
+			try {
+				Thread.sleep(1000);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			
 			goTo((int)destinationX2, (int)destinationY2);
 			destinationX2 = 0;
 			destinationY2 = 0;
@@ -99,23 +109,10 @@ public class Car extends Agent {
 		// Add the TickerBehaviour (period 100 milsec)
 		gotoBehaviour = new TickerBehaviour(this, carSpeedInMil) {
 			protected void onTick() {
-
+				
 				// true when car is arrived at destination
 				if (updateLocation()) {
-					if (carState == State.UNAVAILABLE) {
-						
-						// Reply the Accomplished
-						ACLMessage replyAccomplished = saveMessageForReply
-								.createReply();
-						replyAccomplished.setPerformative(ACLMessage.INFORM);
-						replyAccomplished.setContent("ACCOMPLISHED");
-						send(replyAccomplished);
-						
-						if (showDebugInfo)
-							System.out.println(getName()
-									+ " reply for \"GOTO\": "
-									+ replyAccomplished.getContent());
-					}
+					
 					changeState(State.AVAILABLE);
 					
 					//Checks if car is back to base

@@ -284,8 +284,6 @@ public class Station extends Agent {
 					// je de verzender kunt opvragen.
 					carList.put(pythagoras, msg.getSender());
 				}
-			} else {
-				System.out.println("Something went wrong");
 			}
 		}
 

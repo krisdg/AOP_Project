@@ -1,1 +1,1 @@
-http://Mibi:7778/acc
+http://PROBOOK-KRIS:7778/acc

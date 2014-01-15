@@ -31,7 +31,20 @@ public class Car extends Agent {
 	}
 
 	protected void setup() {
-
+		// Set location: (Give arguments: x;y on creation)
+		Object[] args = getArguments();
+		
+		if (args.length > 0) {
+			String[] positions = args[0].toString().split(";");
+			
+			if (positions.length == 2) {
+				goTo(Integer.parseInt(positions[0]), Integer.parseInt(positions[1]));
+			}
+			if (positions.length == 4) {
+				goTo(Integer.parseInt(positions[0]), Integer.parseInt(positions[1]), Integer.parseInt(positions[2]), Integer.parseInt(positions[3]));
+			}
+		}
+		
 		// Create a new communication behaviour for receiving commands
 		addBehaviour(new ReceiveBehaviour(this));
 

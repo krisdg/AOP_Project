@@ -3,11 +3,13 @@ package tcmis.mainpackage;
 import java.util.ArrayList;
 import java.util.Random;
 
+import tcmis.mainpackage.Car.State;
 import jade.core.AID;
 import jade.core.Agent;
 import jade.core.behaviours.*;
 import jade.domain.AMSService;
 import jade.domain.FIPAAgentManagement.*;
+import jade.gui.GuiAgent;
 import jade.lang.acl.*;
 
 public class Test extends Agent {
@@ -17,22 +19,11 @@ public class Test extends Agent {
 	int interval = 10;
 
 	protected void setup() {
-		// Create a new communication behaviour for receiving commands		
-		addBehaviour(new CyclicBehaviour(this){
-			public void action() {
-				ACLMessage msg = receive();
-				if (msg != null) {
-					System.out.println(" - " + myAgent.getLocalName()
-							+ " received: " + msg.getContent());
-
-					if (msg.getContent().startsWith("SETINTERVAL:")) {
-						String split[] = msg.getContent().split(":");
-						interval = Integer.parseInt(split[1]);
-					}
-				}
-				block();
-			}
-		});
+		Object[] args = getArguments();
+		
+		if (args.length > 0) {
+			interval = Integer.parseInt(args[0].toString());
+		}
 		
 		addBehaviour(new CyclicBehaviour(this) {
 			public void action() {

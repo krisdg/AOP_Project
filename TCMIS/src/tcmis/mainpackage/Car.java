@@ -23,7 +23,7 @@ public class Car extends Agent {
 	// <Settings>
 	boolean showDebugInfo = false;
 	int carSpeedInMil = 100; // The update time in milliseconds
-	int backToGarageTime = 120000; // The time until the car goes back to the
+	int backToGarageTime = 10000; // The time until the car goes back to the
 									// garage
 	// </Settings>
 

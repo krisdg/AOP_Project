@@ -68,7 +68,7 @@ public class Monitor extends GuiAgent {
 				broadCastLocation();
 
 				try {
-					Thread.sleep(200);
+					Thread.sleep(100);
 				} catch (Exception e) {
 					System.out.println("Problem sleeping: " + e);
 					e.printStackTrace();

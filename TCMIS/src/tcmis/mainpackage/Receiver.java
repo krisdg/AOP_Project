@@ -4,12 +4,17 @@ import java.util.ArrayList;
 
 import jade.content.lang.sl.SLCodec;
 import jade.content.onto.basic.Action;
+import jade.core.AID;
 import jade.core.Agent;
 import jade.core.AgentContainer;
 import jade.core.ContainerID;
+import jade.core.Location;
 import jade.lang.acl.*;
 import jade.proto.AchieveREInitiator;
 import jade.wrapper.AgentController;
+import jade.wrapper.ControllerException;
+import jade.wrapper.StaleProxyException;
+import jade.wrapper.State;
 import jade.core.behaviours.*;
 import jade.domain.AMSService;
 import jade.domain.FIPANames;
@@ -17,6 +22,7 @@ import jade.domain.FIPAAgentManagement.AMSAgentDescription;
 import jade.domain.FIPAAgentManagement.SearchConstraints;
 import jade.domain.JADEAgentManagement.CreateAgent;
 import jade.domain.JADEAgentManagement.JADEManagementOntology;
+import jade.domain.JADEAgentManagement.KillAgent;
 
 public class Receiver extends Agent {
 
@@ -94,6 +100,42 @@ public class Receiver extends Agent {
 		}
 	}
 
+	
+	void killCar(AID agentToKill){
+	KillAgent serialkiller = new KillAgent();
+	
+	serialkiller.setAgent(agentToKill);
+	
+	Action actExpr = new Action(getAMS(), serialkiller);
+	ACLMessage request = new ACLMessage(ACLMessage.REQUEST);
+	request.addReceiver(getAMS());
+	request.setOntology(JADEManagementOntology.getInstance().getName());
+
+	getContentManager().registerLanguage(new SLCodec(),
+			FIPANames.ContentLanguage.FIPA_SL);
+
+	getContentManager().registerOntology(
+			JADEManagementOntology.getInstance());
+
+	request.setLanguage(FIPANames.ContentLanguage.FIPA_SL);
+	request.setProtocol(FIPANames.InteractionProtocol.FIPA_REQUEST);
+	try {
+		getContentManager().fillContent(request, actExpr);
+		addBehaviour(new AchieveREInitiator(this, request) {
+			protected void handleInform(ACLMessage inform) {
+				System.out.println("Agent successfully created");
+			}
+
+			protected void handleFailure(ACLMessage failure) {
+				System.out.println("Error creating agent.");
+			}
+		});
+	} catch (Exception e) {
+		e.printStackTrace();
+	}
+	}
+	
+	
 	protected void setup() {
 		addBehaviour(new CyclicBehaviour(this) {
 			public void action() {
@@ -104,6 +146,9 @@ public class Receiver extends Agent {
 
 					if (msg.getContent().equals("derp")) {
 						createCar();
+					}
+					if (msg.getContent().equals("boe")) {
+						killCar(msg.getSender());
 					}
 					ACLMessage reply = msg.createReply();
 					reply.setPerformative(ACLMessage.INFORM);

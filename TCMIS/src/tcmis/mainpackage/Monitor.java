@@ -50,6 +50,12 @@ public class Monitor extends GuiAgent {
 	public List<String[]> elementsToDraw = new ArrayList<>();
 	public List<String> elementsDrawn = new ArrayList<>();
 	public List<String> stations = new ArrayList<>();
+	
+	//Statistics
+	public int stats_totalRequests = 0;
+	public int stats_totalCarCreations = 0;
+	public int stats_totalCars = 0;
+	public int stats_totalStations = 0;
 
 	public void setup() {
 		// creates and shows the GUI
@@ -62,6 +68,19 @@ public class Monitor extends GuiAgent {
 
 			public void action() {
 				broadCastLocation();
+				
+				//Calculate statistics
+				AID[] agents = getAgents();
+				stats_totalCars = 0;
+				stats_totalStations = 0;
+				for (int i = 0; i < agents.length; i++) {
+					if (agents[i].getLocalName().startsWith("CAR_")) {
+						stats_totalCars++;
+					}
+					if (agents[i].getLocalName().startsWith("STATION_")) {
+						stats_totalStations++;
+					}
+				}
 
 				try {
 					Thread.sleep(100);
@@ -386,6 +405,12 @@ public class Monitor extends GuiAgent {
 									msg.getSender().getLocalName(),
 									msg.getSender().getLocalName() + ":"
 											+ msg.getContent() });
+						}
+						if (content.startsWith("ADDEDCAR")) {
+							stats_totalCarCreations++;
+						}
+						if (content.startsWith("ADDEDREQUEST")) {
+							stats_totalRequests++;
 						}
 					}
 				} else {

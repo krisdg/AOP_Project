@@ -245,12 +245,24 @@ public class Station extends Agent {
 				reply.setContent("LOCATION");
 				addRecievers(reply, "CAR_");
 				send(reply);
+				
+				//Send statistics to monitor
+				AID[] agents = getAgents();
+
+				ACLMessage msg1 = new ACLMessage(ACLMessage.INFORM);
+				msg1.setContent("ADDEDREQUEST");
+				for (int i = 0; i < agents.length; i++) {
+					System.out.println(agents[i].getClass().getName().toLowerCase());
+					if (agents[i].getName().startsWith("MONITOR")) {
+						msg1.addReceiver(agents[i]);
+						send(msg1);
+					}
+				}
 
 				break;
 			default:
-				System.out.println("Recieved Command not recognized.");
 				if (showDebugInfo)
-					System.out.println(content);
+					System.out.println("STATION ERROR: " + content);
 				break;
 			}
 		}
@@ -428,8 +440,46 @@ public class Station extends Agent {
 			e.printStackTrace();
 		}
 
+		//Send statistics to monitor
+		AID[] agents = getAgents();
+
+		ACLMessage msg1 = new ACLMessage(ACLMessage.INFORM);
+		msg1.setContent("ADDEDCAR");
+		for (int i = 0; i < agents.length; i++) {
+			if (agents[i].getName().startsWith("MONITOR")) {
+				msg1.addReceiver(agents[i]);
+				send(msg1);
+			}
+		}
 	}
 
+	public AID[] getAgents() {
+		AMSAgentDescription[] AMSAgents = null;
+		List<AID> agents = new ArrayList<AID>();
+		try {
+			SearchConstraints c = new SearchConstraints();
+			c.setMaxResults(new Long(-1));
+			AMSAgents = AMSService.search(this, new AMSAgentDescription(), c);
+
+			AID myID = getAID();
+			for (int i = 0; i < AMSAgents.length; i++) {
+				AID agentID = AMSAgents[i].getName();
+
+				if (agentID.getName().startsWith("CAR_")
+						|| agentID.getName().startsWith("STATION_")
+						|| agentID.getName().startsWith("SIMULATOR")
+						|| agentID.getName().startsWith("MONITOR")) {
+					agents.add(agentID);
+				}
+			}
+		} catch (Exception e) {
+			System.out.println("Problem searching AMS: " + e);
+			e.printStackTrace();
+		}
+
+		return agents.toArray(new AID[agents.size()]);
+	}
+	
 	/*
 	 * Get a valid name for a new Car.
 	 */

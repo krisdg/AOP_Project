@@ -68,6 +68,7 @@ public class MonitorOverview extends JFrame {
 
 	public void clearOverview() {
 		canvas.initialize();
+		canvas.drawStatistics(parentAgent.stats_totalRequests, parentAgent.stats_totalCarCreations, parentAgent.stats_totalCars, parentAgent.stats_totalStations);
 	}
 
 	public void redraw() {
@@ -102,6 +103,21 @@ class Overview
         g.drawRect(-1, -1, 59, 24);
         
         g.dispose();
+    }
+    
+    public void drawStatistics(int requests, int carsCreated, int cars, int stations) {
+    	Graphics g = surface.getGraphics();
+    	Graphics2D g2d = (Graphics2D) g;
+    	
+        g2d.setColor(Color.BLACK);
+
+        //DRAW STATISTICS
+        g2d.drawString("Total requests: " + requests, 4, 490);
+        g2d.drawString("Cars created: " + carsCreated, 4, 480);
+        g2d.drawString("Cars on screen: " + cars, 4, 470);
+        g2d.drawString("Stations on screen: " + stations, 4, 460);
+
+    	g2d.dispose();
     }
 
     public void addCar(int curX, int curY, int desX, int desY, Color color, String name) {

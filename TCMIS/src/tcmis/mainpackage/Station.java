@@ -149,9 +149,13 @@ public class Station extends Agent {
 
 		@Override
 		public void action() {
-			ACLMessage msg = receive();
-			if (msg != null) {
-				receiveRequest(msg);
+			while(true) {
+				ACLMessage msg = receive();
+				if (msg != null) {
+					receiveRequest(msg);
+				} else {
+					break;
+				}
 			}
 			block();
 			// TODO Auto-generated method stub

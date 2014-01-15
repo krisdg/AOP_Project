@@ -34,7 +34,7 @@ import java.util.Map;
 public class Station extends Agent {
 	private int positionX = 0, positionY = 0;
 	private int destinationX = 0, destinationY = 0;
-	private boolean showDebugInfo = true;
+	private boolean showDebugInfo = false;
 	// private List<AID> memento = new ArrayList<AID>();
 
 	// private String rememberAgent;
@@ -173,14 +173,13 @@ public class Station extends Agent {
 
 			String content = "" + msg.getContent();
 
-			System.out.println("received content: " + this.getAgent().getName()
-					+ " : " + content);
-
 			switch (requestSelector(content)) {
 			case 0:
 				// LOCATION:
 				if (msg.getSender().getName().contains("STATION_")) {
+					if(showDebugInfo)
 					System.out.println(msg.getSender().getName());
+					
 					String str[] = msg.getContent().replace("LOCATION:", "")
 							.split(";");
 					destinationX = Integer.parseInt(str[0]);
@@ -248,6 +247,7 @@ public class Station extends Agent {
 				break;
 			default:
 				System.out.println("Recieved Command not recognized.");
+				if(showDebugInfo)
 				System.out.println(content);
 				break;
 			}
@@ -395,7 +395,7 @@ public class Station extends Agent {
 	private void createCar() {
 		CreateAgent ca = new CreateAgent();
 
-		ca.setAgentName("CAR_" + (getTotalRecievers("CAR") + 1));
+		ca.setAgentName(getValidCarName());
 		ca.addArguments(positionX+";"+positionY+";"+destinationX+";"+destinationY);
 		ca.setClassName(Car.class.getName());
 		ca.setContainer(new ContainerID("Main-Container", null));
@@ -428,4 +428,40 @@ public class Station extends Agent {
 		}
 
 	}
+	
+	
+	/*
+	 *	Get a valid name for a new Car. 
+	 */	
+		private String getValidCarName() {
+			int availableCarNumber = 0;
+			ArrayList<String> cars = new ArrayList<String>();
+			AMSAgentDescription[] agents = null;
+			String nameAgent = "CAR_";
+
+			try {
+				SearchConstraints c = new SearchConstraints();
+				c.setMaxResults(new Long(-1));
+				agents = AMSService.search(this, new AMSAgentDescription(), c);
+			} catch (Exception e) {
+				System.out.println("Problem searching AMS: " + e);
+				e.printStackTrace();
+			}
+
+			for (int i = 0; i < agents.length; i++)
+				if (agents[i].getName().getLocalName().contains(nameAgent))
+					cars.add(agents[i].getName().getLocalName());
+
+			if (cars.isEmpty())
+				availableCarNumber = 0;
+			else
+				for (int i = 0; i < cars.size(); i++)
+					for (int j = 0; j <= cars.size(); j++)
+						if (cars.get(i).equals(nameAgent + j))
+							availableCarNumber = i + 1;
+
+			nameAgent = nameAgent + availableCarNumber;
+			return nameAgent;
+		}
+	
 }

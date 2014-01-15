@@ -265,7 +265,7 @@ public class Car extends Agent {
 		
 		// Show car in an field (test purposes)
 		// showRaster();
-		if ((currentX >= (destinationX-5) && currentX <= (destinationX+5)) && (currentY >= (destinationY -5) && currentY <= (destinationY+5))){
+		if ((currentX >= (destinationX-3) && currentX <= (destinationX+3)) && (currentY >= (destinationY -3) && currentY <= (destinationY+3))){
 			currentX = destinationX;
 			currentY = destinationY;
 		}

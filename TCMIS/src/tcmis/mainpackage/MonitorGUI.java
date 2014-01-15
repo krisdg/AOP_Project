@@ -306,12 +306,14 @@ public class MonitorGUI extends JFrame {
     	parentAgent.createSimulatorAgent((int)sim_value.getValue());
         sim_create.setEnabled(false);
         sim_kill.setEnabled(true);
+        sim_value.setEnabled(false);
     }
     
     private void sim_killActionPerformed(java.awt.event.ActionEvent evt) {                                         
     	parentAgent.killSimulatorAgent();
         sim_create.setEnabled(true);
         sim_kill.setEnabled(false);
+        sim_value.setEnabled(true);
     }
 
 	public void refreshStations(String[] stations) {

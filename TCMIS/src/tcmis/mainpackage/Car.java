@@ -14,19 +14,21 @@ import jade.core.behaviours.WakerBehaviour;
 import jade.lang.acl.ACLMessage;
 
 public class Car extends Agent {
-	double currentX = 1, currentY = 1, destinationX=1, destinationY=1, destinationX2 = 0, destinationY2 = 0;
+	double currentX = 1, currentY = 1, destinationX = 1, destinationY = 1,
+			destinationX2 = 0, destinationY2 = 0;
 	State carState = State.AVAILABLE;
 	Behaviour gotoBehaviour, goBackBehaviour;
 	ACLMessage saveMessageForReply;
-	
-	//<Settings>
+
+	// <Settings>
 	boolean showDebugInfo = false;
-	int carSpeedInMil = 100; //The update time in milliseconds
-	int backToGarageTime = 120000; //The time until the car goes back to the garage
-	//</Settings>
-	
+	int carSpeedInMil = 100; // The update time in milliseconds
+	int backToGarageTime = 120000; // The time until the car goes back to the
+									// garage
+	// </Settings>
+
 	long waitTime = 0;
-	
+
 	public enum State {
 		AVAILABLE, UNAVAILABLE
 	}
@@ -34,51 +36,47 @@ public class Car extends Agent {
 	protected void setup() {
 		// Set location: (Give arguments: x;y on creation)
 		Object[] args = getArguments();
-		
+
 		if (args.length > 0) {
 			String[] positions = args[0].toString().split(";");
-			
+
 			if (positions.length == 2) {
-				goTo(Integer.parseInt(positions[0]), Integer.parseInt(positions[1]));
+				goTo(Integer.parseInt(positions[0]),
+						Integer.parseInt(positions[1]));
 				changeState(State.UNAVAILABLE);
 			}
 			if (positions.length == 4) {
-				goTo(Integer.parseInt(positions[0]), Integer.parseInt(positions[1]), Integer.parseInt(positions[2]), Integer.parseInt(positions[3]));
+				goTo(Integer.parseInt(positions[0]),
+						Integer.parseInt(positions[1]),
+						Integer.parseInt(positions[2]),
+						Integer.parseInt(positions[3]));
 				changeState(State.UNAVAILABLE);
 			}
 		}
-		
+
 		// Create a new communication behaviour for receiving commands
 		addBehaviour(new ReceiveBehaviour(this));
 
 	}
-	
+
 	public boolean goTo(int x, int y, int nextX, int nextY) {
 		if (carState.equals(State.UNAVAILABLE))
 			return false;
-		
+
 		destinationX2 = nextX;
 		destinationY2 = nextY;
-		
-		return goTo(x,y);
+
+		return goTo(x, y);
 	}
-	
-	public void secondGoTo(){
-		if(destinationX2 != 0 || destinationY2 != 0){
-			
-			try {
-				Thread.sleep(1000);
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-			
-			goTo((int)destinationX2, (int)destinationY2);
+
+	public void secondGoTo() {
+		if (destinationX2 != 0 || destinationY2 != 0) {
+			goTo((int) destinationX2, (int) destinationY2);
 			destinationX2 = 0;
 			destinationY2 = 0;
 			changeState(State.UNAVAILABLE);
 		}
-		
+
 	}
 
 	/**
@@ -95,28 +93,29 @@ public class Car extends Agent {
 		if (carState.equals(State.UNAVAILABLE))
 			return false;
 
-		//Update the destination
+		// Update the destination
 		destinationX = x;
 		destinationY = y;
-		
-		// When the gotoBehaviour is still working, just update the destination and return true (in case the car is on its way to the garage).
-//		try {
-//			if (!gotoBehaviour.done()) {
-//				return true;
-//			}
-//		} catch (NullPointerException e) {
-//		}
+
+		// When the gotoBehaviour is still working, just update the destination
+		// and return true (in case the car is on its way to the garage).
+		// try {
+		// if (!gotoBehaviour.done()) {
+		// return true;
+		// }
+		// } catch (NullPointerException e) {
+		// }
 
 		// Add the TickerBehaviour (period 100 milsec)
 		gotoBehaviour = new TickerBehaviour(this, carSpeedInMil) {
 			protected void onTick() {
-				
+
 				// true when car is arrived at destination
 				if (updateLocation()) {
-					
+
 					changeState(State.AVAILABLE);
-					
-					//Checks if car is back to base
+
+					// Checks if car is back to base
 					if (currentX == 0 && currentY == 0) {
 						if (showDebugInfo)
 							System.out
@@ -128,6 +127,8 @@ public class Car extends Agent {
 					if (System.currentTimeMillis() >= waitTime) {
 						secondGoTo();
 						stop();
+					} else {
+						changeState(State.UNAVAILABLE);
 					}
 				}
 			}
@@ -140,7 +141,8 @@ public class Car extends Agent {
 	}
 
 	/**
-	 * Reset the goback behaviour, the goback behaviour is used when the car isn't used for 120 seconds, and sends the car back to the garage.
+	 * Reset the goback behaviour, the goback behaviour is used when the car
+	 * isn't used for 120 seconds, and sends the car back to the garage.
 	 */
 	public void resetGoBackBehaviour() {
 
@@ -171,13 +173,15 @@ public class Car extends Agent {
 	}
 
 	/**
-	 * Return the location, this method is used to respond to a Station if he request LOCATION.
+	 * Return the location, this method is used to respond to a Station if he
+	 * request LOCATION.
 	 * 
 	 * @return String LOCATION:X;Y;AVAILABLE/UNAVAILABLE
 	 */
 	private String getLocation() {
 		// Create location reply
-		String location = "LOCATION:" + (int) currentX + ";" + (int) currentY + ";";
+		String location = "LOCATION:" + (int) currentX + ";" + (int) currentY
+				+ ";";
 
 		if (carState.equals(State.AVAILABLE)) {
 			location += "AVAILABLE";
@@ -196,10 +200,10 @@ public class Car extends Agent {
 	private boolean updateLocation() {
 		resetGoBackBehaviour();
 
-		int diffx = 0, diffy = 0;
+		double diffx = 0, diffy = 0;
 
-		diffx = (int)currentX - (int)destinationX;
-		diffy = (int)currentY - (int)destinationY;
+		diffx = currentX - destinationX;
+		diffy = currentY - destinationY;
 
 		if (diffx != 0 && diffy != 0) {
 
@@ -252,9 +256,15 @@ public class Car extends Agent {
 		
 		// Show car in an field (test purposes)
 		// showRaster();
-
-		if ((int)currentX == (int)destinationX && (int)currentY == (int)destinationY)
+		if ((currentX >= (destinationX-5) && currentX <= (destinationX+5)) && (currentY >= (destinationY -5) && currentY <= (destinationY+5))){
+			currentX = destinationX;
+			currentY = destinationY;
+		}
+		
+		if (currentX == destinationX && currentY == destinationY)
 			return true;
+		
+		
 		
 		waitTime = System.currentTimeMillis() + 5000;
 
@@ -297,8 +307,8 @@ public class Car extends Agent {
 
 	/**
 	 * 
-	 * @author Michiel 
-	 * A CyclicBehaviour class that handles all the received messages.
+	 * @author Michiel A CyclicBehaviour class that handles all the received
+	 *         messages.
 	 */
 	class ReceiveBehaviour extends CyclicBehaviour {
 
@@ -309,7 +319,7 @@ public class Car extends Agent {
 		public void action() {
 			ACLMessage msg = receive();
 			if (msg != null) {
-				
+
 				// Split the message so we can use the variables
 				String split[] = msg.getContent().split("[;:]+");
 
@@ -330,7 +340,7 @@ public class Car extends Agent {
 					if (currentX == destinationX && currentY == destinationY)
 						des = "NONE";
 					else
-						des = (int)destinationX + ";" + (int)destinationY;
+						des = (int) destinationX + ";" + (int) destinationY;
 
 					ACLMessage replyDestination = msg.createReply();
 					replyDestination.setPerformative(ACLMessage.INFORM);
@@ -342,18 +352,20 @@ public class Car extends Agent {
 								+ replyDestination.getContent());
 
 					break;
-					
+
 				case "LOCDES":
 					ACLMessage replyLocDes = msg.createReply();
 					replyLocDes.setPerformative(ACLMessage.INFORM);
-					
+
 					String locDes = "LOCDES:";
-					locDes += (int)currentX + ";" + (int)currentY  + ";" + (int)destinationX + ";"+ (int)destinationY + ":";
-					if(carState.equals(State.AVAILABLE))
-							locDes += "AVAILABLE";
-					else if(carState.equals(State.UNAVAILABLE))
+					locDes += (int) currentX + ";" + (int) currentY + ";"
+							+ (int) destinationX + ";" + (int) destinationY
+							+ ":";
+					if (carState.equals(State.AVAILABLE))
+						locDes += "AVAILABLE";
+					else if (carState.equals(State.UNAVAILABLE))
 						locDes += "UNAVAILABLE";
-					
+
 					replyLocDes.setContent(locDes);
 					send(replyLocDes);
 					if (showDebugInfo)
@@ -364,9 +376,9 @@ public class Car extends Agent {
 
 				case "REJECTED":
 					// Buhuhuhu :'(
-					if(showDebugInfo)
+					if (showDebugInfo)
 						System.out.println(getName() + " is Rejected");
-					
+
 					break;
 				case "GOTO":
 

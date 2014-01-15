@@ -19,6 +19,7 @@ public class Car extends Agent {
 	State carState = State.AVAILABLE;
 	Behaviour gotoBehaviour, goBackBehaviour;
 	ACLMessage saveMessageForReply;
+	boolean isDriving = false;
 
 	// <Settings>
 	boolean showDebugInfo = false;
@@ -100,7 +101,7 @@ public class Car extends Agent {
 		// When the gotoBehaviour is still working, just update the destination
 		// and return true (in case the car is on its way to the garage).
 		 try {
-		 if (!gotoBehaviour.done()) {
+		 if (isDriving) {
 			 changeState(State.UNAVAILABLE);
 			 return true;
 		 }
@@ -110,9 +111,11 @@ public class Car extends Agent {
 		// Add the TickerBehaviour (period 100 milsec)
 		gotoBehaviour = new TickerBehaviour(this, carSpeedInMil) {
 			protected void onTick() {
+				isDriving = true;
 
 				// true when car is arrived at destination
 				if (updateLocation()) {
+					isDriving = false;
 
 					changeState(State.AVAILABLE);
 

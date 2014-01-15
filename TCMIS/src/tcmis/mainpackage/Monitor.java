@@ -243,10 +243,11 @@ public class Monitor extends GuiAgent {
 		}
 	}
 
-	public void createSimulatorAgent() {
+	public void createSimulatorAgent(int interval) {
 		CreateAgent ca = new CreateAgent();
 
 		ca.setAgentName("SIMULATOR");
+		ca.addArguments(interval);
 		ca.setClassName(Test.class.getName());
 		ca.setContainer(new ContainerID("Main-Container", null));
 
@@ -288,20 +289,6 @@ public class Monitor extends GuiAgent {
 		// Sending request
 		for (int i = 0; i < agents.length; i++)
 			if (agents[i].getLocalName().equals(goFrom))
-				msg.addReceiver(agents[i]);
-
-		send(msg);
-	}
-
-	public void setTimeInterval(int crowdness) {
-		ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
-		msg.setContent("SETINTERVAL:" + crowdness);
-
-		AID[] agents = getAgents();
-
-		// Sending request
-		for (int i = 0; i < agents.length; i++)
-			if (agents[i].getLocalName().startsWith("SIMULATOR"))
 				msg.addReceiver(agents[i]);
 
 		send(msg);

@@ -52,6 +52,8 @@ public class MonitorGUI extends JFrame {
 		
         this.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         this.setVisible(true);
+        
+        sim_value.setValue(10);
 	}
 	
     private javax.swing.JButton addstation_create;
@@ -70,7 +72,6 @@ public class MonitorGUI extends JFrame {
     private javax.swing.JButton request_perform;
     private javax.swing.JComboBox request_tostation;
     private javax.swing.JButton sim_create;
-    private javax.swing.JButton sim_send;
     private javax.swing.JSpinner sim_value;
     
     private void initComponents() {
@@ -90,7 +91,6 @@ public class MonitorGUI extends JFrame {
         request_fromstation = new javax.swing.JComboBox();
         jPanel3 = new javax.swing.JPanel();
         jLabel1 = new javax.swing.JLabel();
-        sim_send = new javax.swing.JButton();
         sim_create = new javax.swing.JButton();
         sim_value = new javax.swing.JSpinner();
 
@@ -202,13 +202,6 @@ public class MonitorGUI extends JFrame {
 
         jLabel1.setText("Request interval in seconds:");
 
-        sim_send.setText("Send value to simulator agent");
-        sim_send.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                sim_sendActionPerformed(evt);
-            }
-        });
-
         sim_create.setText("Create simulator agent");
         sim_create.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -228,13 +221,9 @@ public class MonitorGUI extends JFrame {
                     .addGroup(jPanel3Layout.createSequentialGroup()
                         .addComponent(jLabel1)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(sim_value, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(0, 0, Short.MAX_VALUE))
-                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel3Layout.createSequentialGroup()
-                        .addComponent(sim_create)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 10, Short.MAX_VALUE)
-                        .addComponent(sim_send)))
-                .addContainerGap())
+                        .addComponent(sim_value, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(sim_create))
+                .addContainerGap(161, Short.MAX_VALUE))
         );
         jPanel3Layout.setVerticalGroup(
             jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -244,9 +233,7 @@ public class MonitorGUI extends JFrame {
                     .addComponent(jLabel1)
                     .addComponent(sim_value, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(sim_send)
-                    .addComponent(sim_create))
+                .addComponent(sim_create)
                 .addContainerGap(47, Short.MAX_VALUE))
         );
 
@@ -298,14 +285,9 @@ public class MonitorGUI extends JFrame {
     }
     
     private void sim_createActionPerformed(java.awt.event.ActionEvent evt) {        
-    	parentAgent.createSimulatorAgent();
-    	parentAgent.setTimeInterval((int)sim_value.getValue());
+    	parentAgent.createSimulatorAgent((int)sim_value.getValue());
         sim_create.setEnabled(false);
-    }                                          
-
-    private void sim_sendActionPerformed(java.awt.event.ActionEvent evt) {
-    	parentAgent.setTimeInterval((int)sim_value.getValue());
-    }    
+    }
 
 	public void refreshStations(String[] stations) {
 		request_fromstation.removeAllItems();
